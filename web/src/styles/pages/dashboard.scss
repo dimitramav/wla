@@ -1,31 +1,40 @@
 .dashboard-grid {
     display: grid;
-    grid-template-columns: 15% 45% 40%;
+    grid-template-columns: 20% 80%;
     height: inherit;
-    padding: 0px;
-    ;
+    overflow: hidden;
 
-    .sidebar,
-    .theory-panel,
-    .documents-panel {
-        overflow: auto;
-        border-right: 1px solid #ddd;
+    .main-area {
+        display: grid;
+        grid-template-rows: 48px auto;
+        height: 100%;
 
-        .documents-panel {
-            border-right: none;
+        .content-grid {
+            display: grid;
+            grid-template-columns: 45% 55%;
+            height: 100%;
 
-            .documents-grid {
-                display: grid;
-                grid-template-columns: 1fr 1fr;
-                height: 100%;
+            .theory-panel {
+                border-right: 1px solid #ddd;
+                overflow: auto;
+            }
 
-                .document-list {
-                    overflow: auto;
-                    border-right: 1px solid #ddd;
-                }
+            .documents-panel {
+                overflow: auto;
 
-                .pdf-viewer {
-                    overflow: auto;
+                .documents-grid {
+                    display: grid;
+                    grid-template-columns: 30% 70%;
+                    height: 100%;
+
+                    .document-list {
+                        overflow: auto;
+                        border-right: 1px solid #ddd;
+                    }
+
+                    .pdf-viewer {
+                        overflow: auto;
+                    }
                 }
             }
         }

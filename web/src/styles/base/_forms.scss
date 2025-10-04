@@ -284,7 +284,6 @@
 
     &:hover {
         color: $accent-dark;
-        text-decoration-color: $accent-dark;
         cursor: pointer;
     }
 
@@ -305,9 +304,7 @@
     &.link-danger {
         color: $error;
 
-        &:hover {
-            color: darken($error, 7%);
-        }
+
     }
 }
 

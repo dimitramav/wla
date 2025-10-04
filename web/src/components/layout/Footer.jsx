@@ -1,9 +1,9 @@
-const Navbar = () => {
+const Footer = () => {
     return (
-        <div className="navbar">
+        <div className="footer">
             <p className="link link-danger">Sign out</p>
         </div>
     );
 }
 
-export default Navbar;
+export default Footer;

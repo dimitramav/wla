@@ -1,0 +1,8 @@
+.footer {
+    background-color: $secondary;
+    color: $light;
+    padding: 0 5px;
+    display: flex;
+    flex-direction: row;
+    justify-content: flex-end; // horizontal alignment (right)
+}

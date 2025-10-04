@@ -17,7 +17,7 @@ export default function DocumentList({ onSelect }) {
     if (!docs.length) return <div className="text-sm text-gray-500">No PDFs found.</div>;
 
     return (
-        <div>
+        <div className='documents-list'>
             {docs.map(doc => (
                 <button
                     key={doc.url}

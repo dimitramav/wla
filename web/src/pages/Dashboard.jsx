@@ -2,6 +2,8 @@ import Sidebar from '../components/layout/Sidebar';
 import TheoryPanel from '../components/viewers/Theory';
 import DocumentList from '../components/viewers/DocumentList';
 import PdfViewer from '../components/viewers/SingleDocument';
+import Navbar from '../components/layout/Navbar';
+import Footer from "../components/layout/Footer";
 import { useState } from 'react';
 
 const Dashboard = () => {
@@ -9,20 +11,22 @@ const Dashboard = () => {
 
     return (
         <div className="dashboard-grid">
-            <div className="sidebar"><Sidebar /></div>
-            <div className="theory-panel"><TheoryPanel /></div>
-            <div className="documents-panel">
-                <div className="documents-grid">
-                    <div className="document-list">
-                        <DocumentList onSelect={setSelectedUrl} />
-                    </div>
-                    <div className="pdf-viewer">
-                        <PdfViewer url={selectedUrl} />
+            <Sidebar />
+            <div className="main-area">
+                <Navbar />
+                <div className="content-grid">
+                    <TheoryPanel />
+                    <div className="documents-panel">
+                        <div className="documents-grid">
+                            <DocumentList onSelect={setSelectedUrl} />
+                            <PdfViewer url={selectedUrl} />
+                        </div>
                     </div>
                 </div>
+                {/* <Footer /> */}
             </div>
         </div>
     );
-}
+};
 
 export default Dashboard;

@@ -1,13 +1,29 @@
+import { useState } from 'react';
 import { useLesson } from '../../hooks/useLesson';
+import logo from "../../assets/full-logo.png";
 
-export default function Sidebar() {
+const Sidebar = () => {
     const { lesson } = useLesson();
+    const items = ["School Anxiety", "Depression"];
+
+    const [selectedLesson, setSelectedLesson] = useState(0);
+
     return (
-        <div className="p-3">
-            <div className="text-sm text-gray-500 mb-2">Thematic</div>
-            <div className="font-medium">School Anxiety</div>
-            <div className="text-xs mt-4 text-gray-500">Lesson slug: {lesson}</div>
-            <div className="mt-6 text-sm">Level: <span className="font-semibold">1</span></div>
+        <div className='sidebar'>
+            <img src={logo} alt="Logo" />
+            <ul className="sidebar-list">
+                {items.map((item, index) => (
+                    <li
+                        key={index}
+                        className={selectedLesson === index ? "selected" : ""}
+                        onClick={() => setSelectedLesson(index)}
+                    >
+                        <h3>{item}</h3>
+                    </li>
+                ))}
+            </ul>
         </div>
     );
-}
+};
+
+export default Sidebar;
