@@ -1,0 +1,43 @@
+@import "base/variables";
+@import "base/typography";
+@import "pages/auth.scss";
+@import "components/panel.scss";
+
+
+.wrapper {
+  overflow: hidden;
+  height: 100vh;
+
+  nav {
+    display: flex;
+    justify-content: space-between;
+    height: 3%;
+    background-color: #323232;
+    padding-right: 10px;
+    padding-left: 10px;
+    align-items: center;
+
+    .item {
+      display: flex;
+      justify-content: center;
+    }
+  }
+
+  .container {
+    /* tell our scene container to take up the full page */
+    height: 100%;
+    background-color: #474747;
+  }
+}
+
+.success {
+  color: #49e738;
+}
+
+.error {
+  color: #e91818;
+}
+
+.waring {
+  color: #ffd700;
+}

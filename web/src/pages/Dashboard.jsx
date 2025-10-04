@@ -3,12 +3,15 @@ import TheoryPanel from '../components/viewers/Theory';
 import DocumentList from '../components/viewers/DocumentList';
 import PdfViewer from '../components/viewers/SingleDocument';
 import { useState } from 'react';
+import Navbar from '../components/layout/Navbar';
+
 
 export default function Dashboard() {
     const [selectedUrl, setSelectedUrl] = useState(undefined);
 
     return (
         <div className="grid" style={{ gridTemplateColumns: '15% 35% 50%', height: 'calc(100vh - 48px)' }}>
+
             <div className="border-r overflow-auto"><Sidebar /></div>
             <div className="border-r overflow-auto"><TheoryPanel /></div>
             <div className="overflow-auto">
