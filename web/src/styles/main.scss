@@ -1,12 +1,20 @@
 @import "base/variables";
 @import "base/typography";
+@import "base/buttons";
+@import "base/forms";
 @import "pages/auth.scss";
+@import "pages/dashboard.scss";
 @import "components/panel.scss";
 
+body {
+  margin: 0;
+
+}
 
 .wrapper {
   overflow: hidden;
   height: 100vh;
+  width: 100%;
 
   nav {
     display: flex;
@@ -23,21 +31,7 @@
     }
   }
 
-  .container {
-    /* tell our scene container to take up the full page */
-    height: 100%;
-    background-color: #474747;
+  .text-center {
+    text-align: center;
   }
-}
-
-.success {
-  color: #49e738;
-}
-
-.error {
-  color: #e91818;
-}
-
-.waring {
-  color: #ffd700;
 }

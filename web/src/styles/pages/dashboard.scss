@@ -1,0 +1,33 @@
+.dashboard-grid {
+    display: grid;
+    grid-template-columns: 15% 45% 40%;
+    height: inherit;
+    padding: 0px;
+    ;
+
+    .sidebar,
+    .theory-panel,
+    .documents-panel {
+        overflow: auto;
+        border-right: 1px solid #ddd;
+
+        .documents-panel {
+            border-right: none;
+
+            .documents-grid {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                height: 100%;
+
+                .document-list {
+                    overflow: auto;
+                    border-right: 1px solid #ddd;
+                }
+
+                .pdf-viewer {
+                    overflow: auto;
+                }
+            }
+        }
+    }
+}

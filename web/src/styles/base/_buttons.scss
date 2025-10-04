@@ -1,0 +1,145 @@
+/* buttons.scss */
+
+/* Base button */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+
+    padding: 0.625rem 1rem;
+    /* ~10px 16px */
+    border: 1px solid transparent;
+    border-radius: 0.6rem;
+
+    font-family: "Inter", sans-serif;
+    /* match headings for snappy CTAs */
+    font-weight: 700;
+    font-size: 0.95rem;
+    line-height: 1;
+
+    cursor: pointer;
+    user-select: none;
+
+    background-color: $bg-card;
+    color: $text-primary;
+
+    transition:
+        background-color 120ms ease,
+        color 120ms ease,
+        border-color 120ms ease,
+        box-shadow 120ms ease,
+        transform 60ms ease;
+
+    &:focus {
+        outline: none;
+    }
+
+    &:focus-visible {
+        box-shadow: 0 0 0 3px rgba($focus-ring, 0.35);
+    }
+
+    &:active {
+        transform: translateY(1px);
+    }
+
+    &:disabled,
+    &.is-disabled {
+        background-color: $btn-disabled-bg;
+        border-color: $btn-disabled-bg;
+        color: $text-secondary;
+        cursor: not-allowed;
+        opacity: 0.75;
+        box-shadow: none;
+        transform: none;
+    }
+}
+
+/* Primary button */
+.btn-primary {
+    background-color: $btn-primary-bg;
+    color: #ffffff;
+
+    &:hover:not(:disabled):not(.is-disabled) {
+        background-color: $btn-primary-hover;
+    }
+}
+
+/* Secondary button */
+.btn-secondary {
+    background-color: $btn-secondary-bg;
+    color: $dark;
+    /* better contrast on warm amber */
+
+    &:hover:not(:disabled):not(.is-disabled) {
+        background-color: $btn-secondary-hover;
+    }
+}
+
+/* Optional: Accent (useful for “Start Quiz” if you want a distinct CTA) */
+.btn-accent {
+    background-color: $btn-accent-bg;
+    color: #ffffff;
+
+    &:hover:not(:disabled):not(.is-disabled) {
+        background-color: $btn-accent-hover;
+    }
+}
+
+/* Subtle outline variant (handy for tertiary actions) */
+.btn-outline {
+    background-color: transparent;
+    color: $text-primary;
+    border-color: $border-color;
+
+    &:hover:not(:disabled):not(.is-disabled) {
+        background-color: $gray-100;
+        border-color: $gray-300;
+    }
+}
+
+/* Semantic helpers (optional) */
+.btn-success {
+    background-color: $success;
+    color: #ffffff;
+
+    &:hover:not(:disabled):not(.is-disabled) {
+        background-color: darken($success, 7%);
+    }
+}
+
+.btn-warning {
+    background-color: $warning;
+    color: $dark;
+
+    &:hover:not(:disabled):not(.is-disabled) {
+        background-color: darken($warning, 7%);
+    }
+}
+
+.btn-error {
+    background-color: $error;
+    color: #ffffff;
+
+    &:hover:not(:disabled):not(.is-disabled) {
+        background-color: darken($error, 7%);
+    }
+}
+
+/* Sizes */
+.btn-sm {
+    padding: 0.45rem 0.75rem;
+    font-size: 0.875rem;
+    border-radius: 0.5rem;
+}
+
+.btn-lg {
+    padding: 0.85rem 1.25rem;
+    font-size: 1.05rem;
+    border-radius: 0.7rem;
+}
+
+/* Block */
+.btn-block {
+    width: 100%;
+}

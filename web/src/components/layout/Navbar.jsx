@@ -1,4 +1,4 @@
-export default function Navbar() {
+const Navbar = () => {
     return (
         <div className="w-full h-12 flex items-center justify-between px-4 border-b">
             <div className="font-semibold">Watch-Listen-Act</div>
@@ -6,3 +6,5 @@ export default function Navbar() {
         </div>
     );
 }
+
+export default Navbar;

@@ -1,23 +1,29 @@
 @font-face {
-  font-family: "Open Sans";
+  font-family: "Inter";
   src: local(""),
-    /* Prevents system font */
-    url("/node_modules/@fontsource/open-sans/files/open-sans-latin-400-normal.woff2") format("woff2");
+    url("/node_modules/@fontsource/inter/files/inter-latin-700-normal.woff2") format("woff2");
+  font-weight: 700;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "Source Sans Pro";
+  src: local(""),
+    url("/node_modules/@fontsource/source-sans-pro/files/source-sans-pro-latin-400-normal.woff2") format("woff2");
   font-weight: 400;
   font-style: normal;
 }
 
 @font-face {
-  font-family: "Open Sans";
+  font-family: "Source Sans Pro";
   src: local(""),
-    /* Prevents system font */
-    url("/node_modules/@fontsource/open-sans/files/open-sans-latin-700-normal.woff2") format("woff2");
+    url("/node_modules/@fontsource/source-sans-pro/files/source-sans-pro-latin-700-normal.woff2") format("woff2");
   font-weight: 700;
   font-style: normal;
 }
 
 body {
-  font-family: "Open Sans", sans-serif;
+  font-family: "Source Sans Pro", sans-serif;
   font-size: 20px;
   color: $text-primary;
   margin-block-start: 0;
@@ -26,7 +32,9 @@ body {
 
 h1,
 h2,
-h3 {
+h3,
+h4 {
+  font-family: "Inter", sans-serif;
   font-weight: 700;
 }
 

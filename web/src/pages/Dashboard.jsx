@@ -3,23 +3,20 @@ import TheoryPanel from '../components/viewers/Theory';
 import DocumentList from '../components/viewers/DocumentList';
 import PdfViewer from '../components/viewers/SingleDocument';
 import { useState } from 'react';
-import Navbar from '../components/layout/Navbar';
 
-
-export default function Dashboard() {
+const Dashboard = () => {
     const [selectedUrl, setSelectedUrl] = useState(undefined);
 
     return (
-        <div className="grid" style={{ gridTemplateColumns: '15% 35% 50%', height: 'calc(100vh - 48px)' }}>
-
-            <div className="border-r overflow-auto"><Sidebar /></div>
-            <div className="border-r overflow-auto"><TheoryPanel /></div>
-            <div className="overflow-auto">
-                <div className="grid grid-cols-2 h-full">
-                    <div className="border-r overflow-auto">
+        <div className="dashboard-grid">
+            <div className="sidebar"><Sidebar /></div>
+            <div className="theory-panel"><TheoryPanel /></div>
+            <div className="documents-panel">
+                <div className="documents-grid">
+                    <div className="document-list">
                         <DocumentList onSelect={setSelectedUrl} />
                     </div>
-                    <div className="overflow-auto">
+                    <div className="pdf-viewer">
                         <PdfViewer url={selectedUrl} />
                     </div>
                 </div>
@@ -27,3 +24,5 @@ export default function Dashboard() {
         </div>
     );
 }
+
+export default Dashboard;

@@ -1,14 +1,14 @@
-$primary: #3b82f6; // soft blue — trust, focus
-$primary-light: #e0efff;
-$primary-dark: #1e40af;
+$primary: #10b981; // mint — energy, progress
+$primary-light: #b9f5d6;
+$primary-dark: #065f46;
 
 $secondary: #f59e0b; // warm amber — creativity
 $secondary-light: #fef3c7;
 $secondary-dark: #92400e;
 
-$accent: #10b981; // mint — energy, progress
-$accent-light: #d1fae5;
-$accent-dark: #065f46;
+$accent: #3b82f6; // soft blue — trust, focus
+$accent-light: #e0efff;
+$accent-dark: #1e40af;
 
 $light: #fafafa; // background
 $light-alt: #f5f5f5; // card / panel
@@ -45,7 +45,7 @@ $text-secondary: $gray-600;
 $text-muted: $gray-400;
 
 $border-color: $gray-200;
-$focus-ring: $accent;
+$focus-ring: $primary-light;
 
 // Buttons
 $btn-primary-bg: $primary;

@@ -13,15 +13,15 @@ export default function DocumentList({ onSelect }) {
 
 
 
-    if (loading) return <div className="p-3 text-sm text-gray-500">Loading docs…</div>;
-    if (!docs.length) return <div className="p-3 text-sm text-gray-500">No PDFs found.</div>;
+    if (loading) return <div className=" text-sm text-gray-500">Loading docs…</div>;
+    if (!docs.length) return <div className="text-sm text-gray-500">No PDFs found.</div>;
 
     return (
-        <div className="p-3 space-y-2">
+        <div>
             {docs.map(doc => (
                 <button
                     key={doc.url}
-                    className="block w-full text-left p-2 border rounded hover:bg-gray-50"
+                    className="block w-full text-left border rounded hover:bg-gray-50"
                     onClick={() => onSelect(doc.url)}
                 >
                     {doc.name}

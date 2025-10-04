@@ -1,6 +1,6 @@
 export default function SingleDocument({ url }) {
     if (!url) {
-        return <div className="p-4 text-sm text-gray-500">Select a document to preview.</div>;
+        return <div className=" text-sm text-gray-500">Select a document to preview.</div>;
     }
     return (
         <div className="w-full h-full">
