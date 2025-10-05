@@ -1,0 +1,42 @@
+.dashboard-grid {
+    display: grid;
+    grid-template-columns: 20% 80%;
+    height: inherit;
+    overflow: hidden;
+
+    .main-area {
+        display: grid;
+        grid-template-rows: 48px auto;
+        height: inherit;
+
+        .content-grid {
+            display: grid;
+            grid-template-columns: 45% 55%;
+            height: inherit;
+
+            .theory-panel {
+                border-right: 1px solid #ddd;
+                overflow: auto;
+                height: inherit;
+
+            }
+
+            .documents-panel {
+                overflow: auto;
+                height: inherit;
+
+                .documents-grid {
+                    display: grid;
+                    grid-template-columns: 20% 80%;
+                    height: inherit;
+
+                    .document-list {
+                        border-right: 1px solid #ddd;
+                    }
+
+
+                }
+            }
+        }
+    }
+}

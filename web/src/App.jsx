@@ -1,20 +1,17 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import Navbar from './components/layout/Navbar';
 import Dashboard from './pages/Dashboard';
-import Login from './pages/Login';
+import Auth from './pages/Auth';
 import { AuthProvider } from './context/AuthContext';
+import "./styles/main.scss"
 
 export default function App() {
   return (
     <AuthProvider>
       <BrowserRouter>
-        <div className="flex flex-col h-screen">
-          <Navbar />
-          <Routes>
-            <Route path="/" element={<Dashboard />} />
-            <Route path="/login" element={<Login />} />
-          </Routes>
-        </div>
+        <Routes>
+          <Route path="/" element={<Dashboard />} />
+          <Route path="/login" element={<Auth />} />
+        </Routes>
       </BrowserRouter>
     </AuthProvider>
   );

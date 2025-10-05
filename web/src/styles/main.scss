@@ -1,0 +1,27 @@
+@import "base/variables";
+@import "base/typography";
+@import "base/buttons";
+@import "base/forms";
+@import "pages/auth.scss";
+@import "pages/dashboard.scss";
+@import "components/panel.scss";
+@import "components/navbar.scss";
+@import "components/sidebar.scss";
+@import "components/footer.scss";
+@import "components/documents-viewer.scss";
+
+body {
+  margin: 0;
+
+}
+
+.wrapper {
+  overflow: hidden;
+  height: 100vh;
+  width: 100%;
+
+
+  .text-center {
+    text-align: center;
+  }
+}

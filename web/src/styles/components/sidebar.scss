@@ -1,0 +1,42 @@
+.sidebar {
+    overflow-y: auto;
+    background-color: $light;
+    border-right: 2px solid $light-alt;
+    padding-top: 30px;
+    padding-left: 10px;
+
+    img {
+        width: 100%;
+        object-fit: contain;
+        display: block;
+        margin-bottom: 50px;
+    }
+
+    .sidebar-list {
+        list-style: none;
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+        align-items: flex-end;
+
+        li {
+            color: $secondary;
+            padding: 10px;
+            border-radius: 8px 0px 0px 8px;
+            width: 80%;
+            border: 2px solid $secondary;
+            border-right: 0px;
+
+            &.selected {
+                color: $light;
+                border: 2px solid $secondary;
+                background-color: $secondary;
+            }
+
+            &:not(.selected):hover {
+                background-color: $secondary-light;
+                cursor: pointer;
+            }
+        }
+    }
+}
