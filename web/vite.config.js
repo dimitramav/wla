@@ -11,4 +11,18 @@ export default defineConfig({
   define: {
     'import.meta.env.VITE_API_BASE': JSON.stringify(process.env.VITE_API_BASE || 'http://localhost:3001'),
   },
+  server: {
+    proxy: {
+      // Proxy API requests
+      '/api': {
+        target: 'http://localhost:3001',
+        changeOrigin: true,
+      },
+      // Proxy static PDFs
+      '/pdfs': {
+        target: 'http://localhost:3001',
+        changeOrigin: true,
+      },
+    },
+  },
 });

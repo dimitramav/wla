@@ -1,32 +1,57 @@
 import { useEffect, useState } from 'react';
 import { getDocs } from '../../api/docs';
 import { useLesson } from '../../hooks/useLesson';
+import TreeView from 'react-treeview';
 
-export default function DocumentList({ onSelect }) {
+const DocumentTree = ({ lesson, docs, onSelect }) => {
+    const label = <span className="node-label">{lesson}</span>;
+
+    return (
+        <div className="document-tree">
+            <TreeView nodeLabel={label} defaultCollapsed={false}>
+                {docs.map(doc => (
+                    <TreeView
+                        key={doc.url}
+                        nodeLabel={
+                            <button
+                                className="doc-node-button"
+                                onClick={() => onSelect(doc.url)}
+                            >
+                                {doc.title}
+                            </button>
+                        }
+                        defaultCollapsed={true}
+                    />
+                ))}
+            </TreeView>
+        </div>
+    );
+};
+const DocumentList = ({ onSelect }) => {
     const { lesson } = useLesson();
     const [docs, setDocs] = useState([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        getDocs(lesson).then(d => { console.log(d); setDocs(d.docs || []) }).finally(() => setLoading(false));
+        setLoading(true);
+        getDocs(lesson)
+            .then(d => {
+                setDocs(d.docs || []);
+            })
+            .finally(() => {
+                setLoading(false);
+            });
     }, [lesson]);
 
-
-
-    if (loading) return <div className=" text-sm text-gray-500">Loading docs…</div>;
-    if (!docs.length) return <div className="text-sm text-gray-500">No PDFs found.</div>;
+    if (loading) {
+        return <div className="text-muted">Loading docs…</div>;
+    }
+    if (!docs.length) {
+        return <div className="text-muted">No PDFs found.</div>;
+    }
 
     return (
-        <div className='documents-list'>
-            {docs.map(doc => (
-                <button
-                    key={doc.url}
-                    className="block w-full text-left border rounded hover:bg-gray-50"
-                    onClick={() => onSelect(doc.url)}
-                >
-                    {doc.name}
-                </button>
-            ))}
-        </div>
+        <DocumentTree lesson={lesson} docs={docs} onSelect={onSelect} />
     );
 }
+export default DocumentList;

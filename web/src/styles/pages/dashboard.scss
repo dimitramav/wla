@@ -7,34 +7,34 @@
     .main-area {
         display: grid;
         grid-template-rows: 48px auto;
-        height: 100%;
+        height: inherit;
 
         .content-grid {
             display: grid;
             grid-template-columns: 45% 55%;
-            height: 100%;
+            height: inherit;
 
             .theory-panel {
                 border-right: 1px solid #ddd;
                 overflow: auto;
+                height: inherit;
+
             }
 
             .documents-panel {
                 overflow: auto;
+                height: inherit;
 
                 .documents-grid {
                     display: grid;
-                    grid-template-columns: 30% 70%;
-                    height: 100%;
+                    grid-template-columns: 20% 80%;
+                    height: inherit;
 
                     .document-list {
-                        overflow: auto;
                         border-right: 1px solid #ddd;
                     }
 
-                    .pdf-viewer {
-                        overflow: auto;
-                    }
+
                 }
             }
         }

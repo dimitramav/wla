@@ -1,0 +1,42 @@
+.document-tree {
+    .node-label {
+        font-weight: 600;
+        padding: 5px 0;
+    }
+
+    .doc-node-button {
+        background: none;
+        border: none;
+        padding: 4px 0;
+        width: 100%;
+        text-align: left;
+        font-family: "Source Sans Pro", sans-serif;
+        color: $text-primary;
+        cursor: pointer;
+
+        &:hover {
+            background-color: $bg-card;
+        }
+
+
+    }
+}
+
+.pdf-viewer-container {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    background-color: $bg-body;
+    height: 100%;
+    overflow: auto;
+
+    .pdf-scroll {
+        flex: 1;
+        overflow-y: auto;
+    }
+}
+
+.pdf-placeholder {
+    color: $text-secondary;
+    font-size: 0.9rem;
+}
