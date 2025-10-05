@@ -1,26 +1,36 @@
 .document-tree {
+
     .node-label {
-        font-weight: 600;
-        padding: 5px 0;
+        font-weight: bold;
+        font-size: 1.2rem;
+        padding: 10px;
+        color: $text-primary;
     }
 
     .doc-node-button {
         background: none;
         border: none;
-        padding: 4px 0;
+        padding: 10px;
         width: 100%;
         text-align: left;
-        font-family: "Source Sans Pro", sans-serif;
-        color: $text-primary;
         cursor: pointer;
+        font-size: 1rem;
+        color: $text-primary;
+        border-radius: 4px 0px 0px 4px;
 
-        &:hover {
-            background-color: $bg-card;
+        &:not(.selected):hover {
+            background-color: $accent-light;
+            border-left: 4px solid $accent;
         }
 
-
+        &.selected {
+            background-color: $accent;
+            color: white;
+        }
     }
 }
+
+
 
 .pdf-viewer-container {
     display: flex;
