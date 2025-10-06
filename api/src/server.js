@@ -1,12 +1,14 @@
 import express from 'express';
 import cors from 'cors';
 import morgan from 'morgan';
+import cookieParser from 'cookie-parser';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { PORT } from './lib/env.js'; // Removed WEB_ORIGIN
+import { PORT } from './lib/env.js';
 
 import lessonsRouter from './routes/lessons.js';
 import docsRouter from './routes/docs.js';
+import authRouter from './routes/auth.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -15,34 +17,34 @@ const app = express();
 
 const allowedOrigins = [
   'http://localhost:5173',
-  'http://127.0.0.1:5173'
 ];
 
 app.use(morgan('dev'));
 app.use(express.json());
+app.use(cookieParser());
 
 app.use(cors({
-  origin: function (origin, callback) {
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error(`CORS not allowed for origin: ${origin}`));
-    }
+  origin(origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) callback(null, true);
+    else callback(new Error(`CORS not allowed for origin: ${origin}`));
   },
   credentials: true
 }));
 
-// Serve static PDFs
+//serve static PDFs
 const pdfsRoot = path.resolve(__dirname, '../../content');
 app.use('/pdfs', express.static(pdfsRoot, {
-  setHeaders(res) {
-    res.setHeader('Accept-Ranges', 'bytes');
-  }
+  setHeaders(res) { res.setHeader('Accept-Ranges', 'bytes'); }
 }));
 
-// API routes
+//auth
+app.use('/api/auth', authRouter);
+
+// API routes (leave open now; you can protect with authRequired later)
+// app.use('/api/lessons', authRequired, lessonsRouter);
 app.use('/api/lessons', lessonsRouter);
 app.use('/api', docsRouter);
+
 app.get('/health', (_req, res) => res.json({ ok: true, service: 'express' }));
 
 app.listen(PORT, () => {

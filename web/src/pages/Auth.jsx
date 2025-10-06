@@ -1,43 +1,48 @@
 import { useState } from "react";
 import logo from "../assets/full-logo.png";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from '../context/AuthContext';
 
 const Auth = () => {
     const [authMode, setAuthMode] = useState("signin");
     const [username, setUsername] = useState("");
     const [password, setPassword] = useState("");
     const [email, setEmail] = useState("");
-    const [error, setError] = useState(false);
+    const [error, setError] = useState(null);
     const navigate = useNavigate();
+    const { signup, login } = useAuth();
+
 
     const isSignIn = authMode === "signin";
 
     const toggleAuthMode = () => {
         setAuthMode(isSignIn ? "signup" : "signin");
         setError(false);
-        setName("");
+        setUsername("");
         setPassword("");
         setEmail("");
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
-
-        // Basic validation
-        const valid =
-            password &&
-            email &&
-            (isSignIn || username); // name required only for signup
-
-        if (!valid) {
-            setError(true);
+        setError(null);
+        if (!email || !password || (!isSignIn && !username)) {
+            setError(isSignIn ? 'Invalid email or password.' : 'Please fill out all fields to sign up.');
             return;
         }
 
-        // TODO: Replace with real backend call
-        console.log("Submitting:", { email, username, password });
-        navigate("/");
+        try {
+            if (isSignIn) {
+                await login({ email, password });
+            } else {
+                await signup({ email, password, username: username });
+            }
+            navigate('/');
+        } catch {
+            setError('Authentication failed.');
+        }
     };
+
 
     return (
         <div className="auth-container">
@@ -52,7 +57,7 @@ const Auth = () => {
                         placeholder="e.g. user@email.com"
                         value={email}
                         onChange={(e) => {
-                            setError(false);
+                            setError(null);
                             setEmail(e.target.value);
                         }}
                     />
@@ -66,13 +71,11 @@ const Auth = () => {
                             placeholder="e.g. jane"
                             value={username}
                             onChange={(e) => {
-                                setError(false);
-                                setName(e.target.value);
+                                setError(null);
+                                setUsername(e.target.value);
                             }}
                         /></div>
                 )}
-
-                {/* Password */}
                 <div>
                     <label className="label" htmlFor="auth-password">Password</label>
                     <input
@@ -85,20 +88,16 @@ const Auth = () => {
                             setError(false);
                             setPassword(e.target.value);
                         }}
-                        autoComplete={isSignIn ? "current-password" : "new-password"}
                     />
                 </div>
-                {/* Error Message */}
                 {error && (
                     <div className="field-error" style={{ marginTop: "0.75rem" }}>
-                        {isSignIn
-                            ? "Invalid email or password."
-                            : "Please fill out all fields to sign up."}
+                        {error}
                     </div>
                 )}
                 <div className="label sub-label">
                     <span>
-                        {isSignIn ? "Not registered yet?" : "Already registered?"}{" "}
+                        {isSignIn ? "Not registered yet?" : "Already registered?"}
                     </span>
                     <span
                         className="link"
