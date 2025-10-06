@@ -1,9 +1,46 @@
-import { createContext, useContext } from 'react';
+import { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import { login, signup, logout, me } from '../api/auth';
 
-const Ctx = createContext({ isAuthed: true });
+const Ctx = createContext(null);
 
-export function useAuth() { return useContext(Ctx); }
+export function useAuth() {
+    const ctx = useContext(Ctx);
+    if (!ctx) throw new Error('useAuth must be used within AuthProvider');
+    return ctx;
+}
 
 export function AuthProvider({ children }) {
-    return <Ctx.Provider value={{ isAuthed: true }}>{children}</Ctx.Provider>;
+    const [user, setUser] = useState(null);
+    const [loading, setLoading] = useState(true);
+    useEffect(() => {
+        (async () => {
+            try {
+                const data = await me();
+                setUser(data.user);
+            } catch {
+                setUser(null);
+            } finally {
+                setLoading(false);
+            }
+        })();
+    }, []);
+
+    const value = useMemo(() => ({
+        user,
+        loading,
+        async signup(p) {
+            const data = await signup(p);
+            setUser(data.user);
+        },
+        async login(p) {
+            const data = await login(p);
+            setUser(data.user);
+        },
+        async logout() {
+            await logout();
+            setUser(null);
+        }
+    }), [user, loading]);
+
+    return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }
