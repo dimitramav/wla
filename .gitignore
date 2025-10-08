@@ -39,6 +39,7 @@ __pycache__/
 .venv/
 venv/
 ENV/
+rag/
 
 # Jupyter
 .ipynb_checkpoints/
