@@ -4,7 +4,7 @@ const router = Router();
 
 router.get('/', (_req, res) => {
   res.json({
-    lessons: [
+    topics: [
       { slug: 'school_anxiety', title: 'School Anxiety' }
     ]
   });

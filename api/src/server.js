@@ -6,7 +6,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { PORT } from './lib/env.js';
 
-import lessonsRouter from './routes/lessons.js';
+import topicsRouter from './routes/topics.js';
 import docsRouter from './routes/docs.js';
 import authRouter from './routes/auth.js';
 
@@ -41,8 +41,8 @@ app.use('/pdfs', express.static(pdfsRoot, {
 app.use('/api/auth', authRouter);
 
 // API routes (leave open now; you can protect with authRequired later)
-// app.use('/api/lessons', authRequired, lessonsRouter);
-app.use('/api/lessons', lessonsRouter);
+// app.use('/api/topics', authRequired, topicsRouter);
+app.use('/api/topics', topicsRouter);
 app.use('/api', docsRouter);
 
 app.get('/health', (_req, res) => res.json({ ok: true, service: 'express' }));

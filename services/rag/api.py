@@ -1,9 +1,9 @@
 from fastapi import FastAPI, HTTPException, Path, Query
 from .settings import read_docsets_meta
 from .vecstore import collection_for
-from .ingest import ingest_lesson
+from .ingest import ingest_topic
 from .settings import read_docsets_meta
-from .summary import summarize_lesson 
+from .summary import summarize_topic 
 
 def create_app() -> FastAPI:
     app = FastAPI(title="WLA RAG", version="0.1.0")
@@ -13,39 +13,40 @@ def create_app() -> FastAPI:
         return {"ok": True, "service": "fastapi"}
 
     # Path-param endpoint as you requested
-    @app.post("/rag/ingest/{lesson}")
-    def rag_ingest(lesson: str = Path(..., description="Folder under /content"),
+    @app.post("/rag/ingest/{topic}")
+    def rag_ingest(topic: str = Path(..., description="Folder under /content"),
                    force: bool = Query(False)):
-        return ingest_lesson(lesson, force=force)
+        return ingest_topic(topic, force=force)
 
     # Merge metadata + count (keeps API lean)
-    @app.get("/rag/docsets/{lesson}")
-    def rag_docset(lesson: str):
+    @app.get("/rag/docsets/{topic}")
+    def rag_docset(topic: str):
         meta = read_docsets_meta()
-        if lesson not in meta:
-            raise HTTPException(status_code=404, detail="Unknown lesson")
+        if topic not in meta:
+            raise HTTPException(status_code=404, detail="Unknown topic")
         # ensure live count is visible (but keep meta pure if you prefer)
         try:
-            n = collection_for(lesson).count()
+            n = collection_for(topic).count()
         except Exception:
-            n = meta[lesson].get("chunk_count")
-        return {"lesson": lesson, **meta[lesson], "chunk_count": n}
+            n = meta[topic].get("chunk_count")
+        return {"topic": topic, **meta[topic], "chunk_count": n}
+    
     @app.get("/rag/summary")
     def rag_summary(
-    lesson: str = Query(...),
+    topic: str = Query(...),
     hash: str | None = None,
     seed: int = 7,
     ):
         meta = read_docsets_meta()  # reads services/rag/docsets.json
-        if lesson not in meta:
-            raise HTTPException(404, f"Lesson '{lesson}' not found")
-        docset_hash = hash or meta[lesson]["hash"]
-        out = summarize_lesson(lesson, docset_hash, seed=seed)
+        if topic not in meta:
+            raise HTTPException(404, f"topic '{topic}' not found")
+        docset_hash = hash or meta[topic]["hash"]
+        out = summarize_topic(topic, docset_hash, seed=seed)
+        print("Summary generated:", out)
         return {
-            "lesson": lesson,
+            "topic": topic,
             "hash": docset_hash,
             "bullets": out["bullets"],
-            "model": out["model"],
             "promptHash": out["promptHash"],
         }
     

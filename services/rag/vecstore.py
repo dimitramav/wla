@@ -23,9 +23,9 @@ _client = chromadb.PersistentClient(
     settings=Settings(anonymized_telemetry=False, allow_reset=True)
 )
 
-def collection_for(lesson: str):
-    # single collection per lesson; namespace with a prefix if you like
+def collection_for(topic: str):
+    # single collection per topic; namespace with a prefix if you like
     return _client.get_or_create_collection(
-        name=f"lesson__{lesson}",
+        name=f"topic__{topic}",
         embedding_function=emb_fn
 )

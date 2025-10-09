@@ -1,12 +1,12 @@
 import { useState } from 'react';
-import { useLesson } from '../../hooks/useLesson';
+import { useTopic } from '../../hooks/useTopic';
 import logo from "../../assets/full-logo.png";
 
 const Sidebar = () => {
-    const { lesson } = useLesson();
+    const { topic } = useTopic();
     const items = ["School Anxiety", "Depression"];
 
-    const [selectedLesson, setSelectedLesson] = useState(0);
+    const [selectedTopic, setSelectedTopic] = useState(0);
 
     return (
         <div className='sidebar'>
@@ -15,8 +15,8 @@ const Sidebar = () => {
                 {items.map((item, index) => (
                     <li
                         key={index}
-                        className={selectedLesson === index ? "selected" : ""}
-                        onClick={() => setSelectedLesson(index)}
+                        className={selectedTopic === index ? "selected" : ""}
+                        onClick={() => setSelectedTopic(index)}
                     >
                         <h3>{item}</h3>
                     </li>

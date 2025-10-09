@@ -7,21 +7,21 @@ from .settings import (
 from .pdf_filter import filter_research_pdf
 from .vecstore import make_splitter, collection_for
 
-def ingest_lesson(lesson: str, force: bool = False) -> Dict[str, Any]:
-    pdfs = collect_pdf_files(lesson)
+def ingest_topic(topic: str, force: bool = False) -> Dict[str, Any]:
+    pdfs = collect_pdf_files(topic)
     if not pdfs:
-        raise HTTPException(status_code=404, detail=f"No PDFs found for lesson '{lesson}'")
+        raise HTTPException(status_code=404, detail=f"No PDFs found for topic '{topic}'")
 
     h = compute_docset_hash(pdfs)
     meta = read_docsets_meta()
-    prev = meta.get(lesson)
+    prev = meta.get(topic)
 
     # Short-circuit if unchanged
     if prev and prev.get("hash") == h and not force:
-        return {"lesson": lesson, "docset_hash": h, "status": "unchanged",
+        return {"topic": topic, "docset_hash": h, "status": "unchanged",
                 "chunks_upserted": 0, "files": prev.get("files", [])}
 
-    col = collection_for(lesson)
+    col = collection_for(topic)
     # If changed, reset collection (cheap & predictable in prototypes)
     if prev and prev.get("hash") and prev["hash"] != h:
         from chromadb import PersistentClient
@@ -46,7 +46,7 @@ def ingest_lesson(lesson: str, force: bool = False) -> Dict[str, Any]:
             ids.append(f"{p.name}-{i}-{uid}")
             docs.append(ch)
             metas.append({
-                "lesson": lesson,
+                "topic": topic,
                 "source": p.name,
                 "chunk_index": i,
                 "docset_hash": h,
@@ -64,7 +64,7 @@ def ingest_lesson(lesson: str, force: bool = False) -> Dict[str, Any]:
     except Exception:
         chunk_count = None
 
-    meta[lesson] = {
+    meta[topic] = {
         "hash": h,
         "files": files_meta,
         "collection": col.name,
@@ -73,5 +73,5 @@ def ingest_lesson(lesson: str, force: bool = False) -> Dict[str, Any]:
     }
     write_docsets_meta(meta)
 
-    return {"lesson": lesson, "docset_hash": h, "status": "ingested",
+    return {"topic": topic, "docset_hash": h, "status": "ingested",
             "chunks_upserted": len(docs), "files": files_meta}

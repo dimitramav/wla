@@ -4,11 +4,19 @@ from typing import List, Dict
 MAX_CHARS = 4500   # keep context small for tiny CPU models
 TOP_M     = 30     # take first 30 chunks in stable order
 
-def build_stable_context(col, lesson: str, docset_hash: str) -> str:
-    # pull all metadata for this lesson/version from Chroma
-    # we rely on metadata stored at ingest: {"lesson":..., "docset_hash":..., "source":..., "page":..., "chunk_idx":...}
+def build_stable_context(col, topic: str, docset_hash: str) -> str:
+    # pull all metadata for this topic/version from Chroma
+    # we rely on metadata stored at ingest: {"topic":..., "docset_hash":..., "source":..., "page":..., "chunk_idx":...}
     # NOTE: using a filtered get to avoid similarity randomness
-    records = col.get(where={"lesson": lesson, "docset_hash": docset_hash}, include=["documents","metadatas"])
+    records = col.get(
+        where={
+            "$and": [
+                {"topic": topic},
+                {"docset_hash": docset_hash}
+            ]
+        },
+        include=["documents", "metadatas"]
+    )
     docs = records.get("documents", [])
     metas = records.get("metadatas", [])
     # stable sort
@@ -21,15 +29,15 @@ def build_stable_context(col, lesson: str, docset_hash: str) -> str:
         buf.append(seg); total += len(seg)
     return "".join(buf)
 
-def summarize_lesson(lesson: str, docset_hash: str, seed: int = 7) -> Dict:
+def summarize_topic(topic: str, docset_hash: str, seed: int = 7) -> Dict:
     from llm.prompts import SYSTEM_SUMMARY, USER_TEMPLATE
     from llm.client import generate_bullets, prompt_hash
-    col = collection_for(f"lesson__{lesson}")  # same naming as ingest
-    ctx = build_stable_context(col, lesson, docset_hash)
-    user = USER_TEMPLATE.format(lesson=lesson, docset_hash=docset_hash) + "\n\n" + ctx
+    col = collection_for(f"topic__{topic}")  # same naming as ingest
+    ctx = build_stable_context(col, topic, docset_hash)
+    user = USER_TEMPLATE.format(topic=topic, docset_hash=docset_hash) + "\n\n" + ctx
     bullets = generate_bullets(SYSTEM_SUMMARY, user, seed=seed, temperature=0.0)
     return {
-        "lesson": lesson,
+        "topic": topic,
         "hash": docset_hash,
         "bullets": bullets,
         "promptHash": prompt_hash(user),
