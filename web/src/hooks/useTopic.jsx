@@ -1,6 +1,33 @@
-import { useMemo } from 'react';
+import { useMemo, useEffect, useState } from 'react';
+import { getTopicSummary } from '../api/theory';  // adjust path as needed
 
 export function useTopic() {
     const topic = useMemo(() => 'school_anxiety', []);
-    return { topic };
+    const [bullets, setBullets] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+
+    useEffect(() => {
+        let alive = true;
+        setLoading(true);
+
+        getTopicSummary(topic)
+            .then(data => {
+                if (!alive) return;
+                setBullets(data?.bullets || []);
+                setError(null);
+            })
+            .catch(e => {
+                if (!alive) return;
+                setError(e?.message || 'error');
+                setBullets([]);
+            })
+            .finally(() => {
+                if (alive) setLoading(false);
+            });
+
+        return () => { alive = false; };
+    }, [topic]);
+
+    return { topic, bullets, loading, error };
 }

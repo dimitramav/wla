@@ -32,11 +32,11 @@ def read_docsets_meta() -> Dict[str, Any]:
 def write_docsets_meta(data: Dict[str, Any]) -> None:
     DOCSETS_META.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
 
-def get_lesson_dir(lesson: str) -> Path:
-    return (CONTENT_DIR / lesson).resolve()
+def get_topic_dir(topic: str) -> Path:
+    return (CONTENT_DIR / topic).resolve()
 
-def collect_pdf_files(lesson: str) -> List[Path]:
-    root = get_lesson_dir(lesson)
+def collect_pdf_files(topic: str) -> List[Path]:
+    root = get_topic_dir(topic)
     if not root.exists():
         return []
     return sorted([p for p in root.rglob("*.pdf") if p.is_file()])

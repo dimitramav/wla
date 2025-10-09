@@ -35,6 +35,7 @@ def summarize_topic(topic: str, docset_hash: str, seed: int = 7) -> Dict:
     col = collection_for(f"topic__{topic}")  # same naming as ingest
     ctx = build_stable_context(col, topic, docset_hash)
     user = USER_TEMPLATE.format(topic=topic, docset_hash=docset_hash) + "\n\n" + ctx
+    print(user)
     bullets = generate_bullets(SYSTEM_SUMMARY, user, seed=seed, temperature=0.0)
     return {
         "topic": topic,
