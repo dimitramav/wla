@@ -22,6 +22,10 @@
   font-style: normal;
 }
 
+// ===================
+// Typography Defaults
+// ===================
+
 body {
   font-family: "Source Sans Pro", sans-serif;
   font-size: 16px;
@@ -60,4 +64,49 @@ h4 {
 
 p {
   font-size: 100%;
+  margin: 0;
+}
+
+@media (max-width: 1550px) {
+  body {
+    font-size: 14px;
+  }
+
+  h1 {
+    font-size: 165%;
+  }
+
+  h2 {
+    font-size: 140%;
+  }
+
+  h3 {
+    font-size: 115%;
+  }
+
+  h4 {
+    font-size: 105%;
+  }
+}
+
+@media (max-width: 1024px) {
+  body {
+    font-size: 14px;
+  }
+
+  h1 {
+    font-size: 150%;
+  }
+
+  h2 {
+    font-size: 130%;
+  }
+
+  h3 {
+    font-size: 110%;
+  }
+
+  h4 {
+    font-size: 100%;
+  }
 }
