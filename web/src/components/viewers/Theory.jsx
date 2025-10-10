@@ -1,15 +1,58 @@
+import { useTopic } from '../../hooks/useTopic';
+
 const Theory = () => {
+    const { topic, bullets, loading, error } = useTopic();
+
     return (
         <div className="theory-panel">
-            <div className="p-4">
-                <h2 className="font-semibold mb-2">Theory (Deterministic Summary)</h2>
-                <p className="text-sm text-gray-600">Day 1 placeholder. Summary will appear here on Day 5.</p>
-                <div className="mt-4 flex gap-2">
-                    <button className="px-3 py-2 border rounded">Show Progress</button>
-                    <button className="px-3 py-2 border rounded">Start Quiz</button>
-                </div>
+            <div>
+                <h1>Theory at a glance</h1>
+                <p className="panel-topic">Topic: {topic}</p>
+            </div>
+
+            {loading && <div className="panel-topic panel-message">Loading…</div>}
+            {error && <div className="panel-topic panel-error">Failed to load.</div>}
+
+            {!loading && !error && (
+                bullets?.length ? (
+                    <ul className="bullet-list">
+                        {bullets.map((b, i) => {
+                            const trimmed = b.trim();
+
+                            if (trimmed.startsWith('+')) {
+                                return (
+                                    <li key={i} className="bullet sub-bullet">
+                                        {trimmed.substring(1).trim()}
+                                    </li>
+                                );
+                            }
+
+                            if (trimmed.startsWith('*')) {
+                                return (
+                                    <li key={i} className="bullet main-bullet">
+                                        {trimmed.substring(1).trim()}
+                                    </li>
+                                );
+                            }
+
+                            return (
+                                <li key={i} className="bullet main-bullet">
+                                    {trimmed}
+                                </li>
+                            );
+                        })}
+                    </ul>
+                ) : (
+                    <div className="panel-message">No summary available.</div>
+                )
+            )}
+
+            <div className="panel-buttons">
+                <button className="btn btn-outline">Show Progress</button>
+                <button className="btn btn-outline">Start Quiz</button>
             </div>
         </div>
     );
-}
+};
+
 export default Theory;

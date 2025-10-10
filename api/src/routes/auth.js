@@ -1,7 +1,7 @@
 import { Router } from 'express';
-import User from '../models/User.js';
-import { connectDB } from '../lib/db.js';
-import { hashPassword, comparePassword, signJwt, verifyJwt } from '../lib/auth.js';
+import { signJwt, verifyJwt } from '../lib/auth.js';
+import { UserDB } from '../db/UserDB.js';
+
 
 const router = Router();
 
@@ -16,37 +16,57 @@ function setAuthCookie(res, token) {
 }
 
 router.post('/signup', async (req, res) => {
-    await connectDB();
     const { email, password, username } = req.body || {};
+
     if (!email || !password || !username) {
-        return res.status(400).json({ error: { code: 'BAD_REQUEST', message: 'email, password, username required' } });
+        return res.status(400).json({
+            error: {
+                code: 'BAD_REQUEST',
+                message: 'email, password, username required'
+            }
+        });
     }
-    const exists = await User.findOne({ email });
-    if (exists) return res.status(409).json({ error: { code: 'EMAIL_TAKEN' } });
 
-    const passwordHash = await hashPassword(password);
-    const user = await User.create({ email, username, passwordHash, seed: '' });
-    const token = signJwt({ id: user._id.toString(), email: user.email, username: user.username });
+    try {
+        const user = await UserDB.createUser({ email, username, password });
+        const token = signJwt({
+            id: user.id.toString(),
+            email: user.email,
+            username: user.username
+        });
 
-    setAuthCookie(res, token);
-    res.json({ ok: true, user: { id: user._id, email: user.email, username: user.username } });
+        setAuthCookie(res, token);
+        res.json({ ok: true, user });
+    } catch (error) {
+        if (error.message === 'EMAIL_TAKEN') {
+            return res.status(409).json({ error: { code: 'EMAIL_TAKEN' } });
+        }
+        throw error;
+    }
 });
 
 router.post('/login', async (req, res) => {
-    await connectDB();
     const { email, password } = req.body || {};
-    if (!email || !password) return res.status(400).json({ error: { code: 'BAD_REQUEST' } });
 
-    const user = await User.findOne({ email });
-    if (!user) return res.status(401).json({ error: { code: 'INVALID_CREDENTIALS' } });
+    if (!email || !password) {
+        return res.status(400).json({ error: { code: 'BAD_REQUEST' } });
+    }
 
-    const ok = await comparePassword(password, user.passwordHash);
-    if (!ok) return res.status(401).json({ error: { code: 'INVALID_CREDENTIALS' } });
+    try {
+        const user = await UserDB.authenticateUser({ email, password });
+        const token = signJwt({
+            id: user.id.toString(),
+            email: user.email,
+            username: user.username
+        });
 
-    const token = signJwt({ id: user._id.toString(), email: user.email, username: user.username });
-    setAuthCookie(res, token);
-    res.json({ ok: true, user: { id: user._id, email: user.email, name: user.username } });
+        setAuthCookie(res, token);
+        res.json({ ok: true, user });
+    } catch (error) {
+        return res.status(401).json({ error: { code: 'INVALID_CREDENTIALS' } });
+    }
 });
+
 
 router.post('/logout', (req, res) => {
     res.clearCookie('wla', { path: '/' });

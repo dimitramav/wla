@@ -5,13 +5,25 @@ import cookieParser from 'cookie-parser';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { PORT } from './lib/env.js';
+import { connectDB } from './db/connection.js';
 
-import lessonsRouter from './routes/lessons.js';
+import topicsRouter from './routes/topics.js';
 import docsRouter from './routes/docs.js';
 import authRouter from './routes/auth.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+connectDB()
+  .then(() => {
+    app.listen(PORT, () => {
+      console.log(` API listening on http://localhost:${PORT}`);
+    });
+  })
+  .catch(err => {
+    console.error('Failed to connect to MongoDB:', err);
+    process.exit(1); // Exit if DB connection fails
+  });
 
 const app = express();
 
@@ -41,8 +53,8 @@ app.use('/pdfs', express.static(pdfsRoot, {
 app.use('/api/auth', authRouter);
 
 // API routes (leave open now; you can protect with authRequired later)
-// app.use('/api/lessons', authRequired, lessonsRouter);
-app.use('/api/lessons', lessonsRouter);
+// app.use('/api/topics', authRequired, topicsRouter);
+app.use('/api/topics', topicsRouter);
 app.use('/api', docsRouter);
 
 app.get('/health', (_req, res) => res.json({ ok: true, service: 'express' }));

@@ -1,5 +1,5 @@
 import { apiGet } from './client';
 
-export async function getDocs(lesson) {
-    return apiGet(`/api/${lesson}/docs`);
+export async function getDocs(topic) {
+    return apiGet(`/api/${topic}/docs`);
 }

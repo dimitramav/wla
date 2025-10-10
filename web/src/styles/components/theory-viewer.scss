@@ -1,0 +1,58 @@
+.theory-panel {
+    border: 1px solid $border-color;
+    border-radius: 6px;
+    margin: 1rem;
+    display: flex;
+    flex-direction: column;
+    padding: 20px;
+    height: fit-content;
+    max-height: 84%;
+    overflow: hidden;
+
+    .panel-topic {
+        color: $text-muted;
+        max-height: fit-content;
+
+        &.panel-message {
+            color: $text-muted;
+        }
+
+        &.panel-error {
+            color: $error;
+        }
+
+    }
+
+    .bullet-list {
+        list-style-type: disc;
+        overflow-y: auto;
+
+        .bullet {
+            color: $text-primary;
+            padding: 8px;
+        }
+
+        .main-bullet {
+            list-style-type: disc;
+        }
+
+        .sub-bullet {
+            list-style-type: circle;
+            margin-left: 1rem; // Indent like a tab
+        }
+    }
+
+
+    .panel-buttons {
+        display: flex;
+        margin-top: 30px;
+        flex-direction: row;
+        justify-content: space-evenly;
+
+        >* {
+            flex: 1 1 0;
+            max-width: 25%;
+        }
+    }
+
+}

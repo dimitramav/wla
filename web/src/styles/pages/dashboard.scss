@@ -1,6 +1,7 @@
 .dashboard-grid {
     display: grid;
-    grid-template-columns: 20% 80%;
+    grid-template-columns: 15% 85%;
+    padding-right: 40px;
     height: inherit;
     overflow: hidden;
 
@@ -14,12 +15,6 @@
             grid-template-columns: 45% 55%;
             height: inherit;
 
-            .theory-panel {
-                border-right: 1px solid #ddd;
-                overflow: auto;
-                height: inherit;
-
-            }
 
             .documents-panel {
                 overflow: auto;

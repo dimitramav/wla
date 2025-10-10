@@ -1,5 +1,3 @@
-/* buttons.scss */
-
 /* Base button */
 .btn {
     display: inline-flex;
@@ -8,12 +6,10 @@
     gap: 0.5rem;
 
     padding: 0.625rem 1rem;
-    /* ~10px 16px */
     border: 1px solid transparent;
     border-radius: 0.6rem;
 
     font-family: "Inter", sans-serif;
-    /* match headings for snappy CTAs */
     font-weight: 700;
     font-size: 0.95rem;
     line-height: 1;
@@ -69,14 +65,12 @@
 .btn-secondary {
     background-color: $btn-secondary-bg;
     color: $dark;
-    /* better contrast on warm amber */
 
     &:hover:not(:disabled):not(.is-disabled) {
         background-color: $btn-secondary-hover;
     }
 }
 
-/* Optional: Accent (useful for “Start Quiz” if you want a distinct CTA) */
 .btn-accent {
     background-color: $btn-accent-bg;
     color: #ffffff;
@@ -86,19 +80,16 @@
     }
 }
 
-/* Subtle outline variant (handy for tertiary actions) */
 .btn-outline {
     background-color: transparent;
-    color: $text-primary;
-    border-color: $border-color;
+    color: $primary;
+    border-color: $primary;
 
     &:hover:not(:disabled):not(.is-disabled) {
-        background-color: $gray-100;
-        border-color: $gray-300;
+        background-color: $primary-light;
     }
 }
 
-/* Semantic helpers (optional) */
 .btn-success {
     background-color: $success;
     color: #ffffff;
@@ -126,7 +117,6 @@
     }
 }
 
-/* Sizes */
 .btn-sm {
     padding: 0.45rem 0.75rem;
     font-size: 0.875rem;
@@ -139,7 +129,6 @@
     border-radius: 0.7rem;
 }
 
-/* Block */
 .btn-block {
     width: 100%;
 }

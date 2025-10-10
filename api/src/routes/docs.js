@@ -5,12 +5,12 @@ import fs from 'fs';
 const router = Router();
 
 /**
- * GET /api/:lesson/docs
- * Lists PDFs from content/:lesson
+ * GET /api/:topic/docs
+ * Lists PDFs from content/:topic
  **/
-router.get('/:lesson/docs', (req, res) => {
-  const { lesson } = req.params;
-  const base = path.resolve(process.cwd(), '../content', lesson);
+router.get('/:topic/docs', (req, res) => {
+  const { topic } = req.params;
+  const base = path.resolve(process.cwd(), '../content', topic);
   if (!fs.existsSync(base)) {
     return res.json({ docs: [] });
   }
@@ -18,7 +18,7 @@ router.get('/:lesson/docs', (req, res) => {
     .filter(f => f.toLowerCase().endsWith('.pdf'))
     .map(title => ({
       title,
-      url: `/pdfs/${lesson}/${title}`
+      url: `/pdfs/${topic}/${title}`
     }));
   res.json({ docs: files });
 });

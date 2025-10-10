@@ -1,5 +1,5 @@
 import mongoose from 'mongoose';
-import { MONGO_URL } from './env.js';
+import { MONGO_URL } from '../lib/env.js';
 
 let isConnected = false;
 
