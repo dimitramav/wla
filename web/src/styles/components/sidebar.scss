@@ -1,7 +1,5 @@
 .sidebar {
     overflow-y: auto;
-    background-color: $light;
-    border-right: 2px solid $light-alt;
     padding-top: 30px;
     padding-left: 10px;
 
@@ -25,7 +23,6 @@
             border-radius: 8px 0px 0px 8px;
             width: 80%;
             border: 2px solid $secondary;
-            border-right: 0px;
 
             &.selected {
                 color: $light;

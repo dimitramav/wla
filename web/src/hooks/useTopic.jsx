@@ -1,5 +1,5 @@
 import { useMemo, useEffect, useState } from 'react';
-import { getTopicSummary } from '../api/theory';  // adjust path as needed
+import { getTopicSummary } from '../api/theory';
 
 export function useTopic() {
     const topic = useMemo(() => 'school_anxiety', []);

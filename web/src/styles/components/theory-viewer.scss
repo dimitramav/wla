@@ -1,71 +1,58 @@
 .theory-panel {
-    border: 1px solid #ddd;
+    border: 1px solid $border-color;
     border-radius: 6px;
-    background: #fff;
     margin: 1rem;
-    max-width: 600px;
-}
-
-.panel-content {
-    padding: 1rem;
-}
-
-.panel-title {
-    font-weight: 600;
-    margin-bottom: 0.5rem;
-}
-
-.panel-topic {
-    font-size: 0.875rem;
-    color: #666;
-}
-
-.panel-message {
-    margin-top: 1rem;
-    font-size: 0.875rem;
-    color: #666;
-}
-
-.panel-error {
-    margin-top: 1rem;
-    font-size: 0.875rem;
-    color: #b00020;
-}
-
-.bullet-list {
-    list-style-type: disc;
-    padding-left: 1.5rem;
-    margin-top: 1rem;
-}
-
-.bullet {
-    margin-bottom: 0.5rem;
-    color: #333;
-}
-
-.main-bullet {
-    list-style-type: disc;
-}
-
-.sub-bullet {
-    list-style-type: circle;
-    margin-left: 1rem; // Indent like a tab
-}
-
-.panel-buttons {
-    margin-top: 1.5rem;
     display: flex;
-    gap: 0.5rem;
-}
+    flex-direction: column;
+    padding: 20px;
+    height: fit-content;
+    max-height: 84%;
+    overflow: hidden;
 
-.panel-button {
-    padding: 0.5rem 1rem;
-    border: 1px solid #aaa;
-    border-radius: 4px;
-    background: #f9f9f9;
-    cursor: pointer;
+    .panel-topic {
+        color: $text-muted;
+        max-height: fit-content;
 
-    &:hover {
-        background: #f0f0f0;
+        &.panel-message {
+            color: $text-muted;
+        }
+
+        &.panel-error {
+            color: $error;
+        }
+
     }
+
+    .bullet-list {
+        list-style-type: disc;
+        overflow-y: auto;
+
+        .bullet {
+            color: $text-primary;
+            padding: 8px;
+        }
+
+        .main-bullet {
+            list-style-type: disc;
+        }
+
+        .sub-bullet {
+            list-style-type: circle;
+            margin-left: 1rem; // Indent like a tab
+        }
+    }
+
+
+    .panel-buttons {
+        display: flex;
+        margin-top: 30px;
+        flex-direction: row;
+        justify-content: space-evenly;
+
+        >* {
+            flex: 1 1 0;
+            max-width: 25%;
+        }
+    }
+
 }
