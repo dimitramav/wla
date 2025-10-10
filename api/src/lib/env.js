@@ -10,3 +10,5 @@ export const JWT_SECRET = "aec27315ecce32ae570d24bdae1b11c71d39a244aa8a650906886
 export const JWT_EXPIRES = "7d"
 export const DOCSET_FOLDER = process.env.DOCSET_FOLDER || '/services';
 export const RAG_DOCSETS_META = process.env.RAG_DOCSETS_META || 'rag/docsets.json';
+export const RAG_CONTENT_DIR = process.env.RAG_CONTENT_DIR || '../content';
+export const KEYWORDS_YAML = process.env.KEYWORDS_YAML || 'keywords.yaml';
