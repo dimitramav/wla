@@ -5,7 +5,7 @@ import { useAuth } from "../../context/AuthContext";
 import Loader from '../layout/widgets/Loader';
 import QuizHeader from './QuizHeader';
 import QuizQuestion from './QuizQuestion';
-import Review from './Review';
+import QuizScore from './QuizScore';
 
 const Quiz = () => {
     const { topic, docsetHash } = useTopic();
@@ -33,7 +33,7 @@ const Quiz = () => {
             <QuizHeader level={level} onLevelChange={handleLevelChange} />
 
             {submitted ? (
-                <Review
+                <QuizScore
                     questions={questions}
                     answers={answers}
                     level={level}

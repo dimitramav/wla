@@ -1,7 +1,7 @@
 
 import { FaCheckCircle, FaTimesCircle } from "react-icons/fa";
 
-const QuizReview = ({ questions, answers, level, onRetake, onNextLevel, onShowProgress, keywords }) => {
+const QuizScore = ({ questions, answers, level, onRetake, onNextLevel, onShowProgress, keywords }) => {
     const results = questions.map(q => {
         const userAnswer = answers[q.id];
         const isCorrect = userAnswer === q.correct;
@@ -15,7 +15,7 @@ const QuizReview = ({ questions, answers, level, onRetake, onNextLevel, onShowPr
     const passed = correctCount >= 12;
 
     return (
-        <div className="quiz-review">
+        <div className="quiz-score">
             <div className="quiz-results">
                 <h3> Result: <b className={passed ? "pass" : "fail"}>{passed ? "Pass" : "Fail"}</b>
                 </h3>
@@ -23,10 +23,10 @@ const QuizReview = ({ questions, answers, level, onRetake, onNextLevel, onShowPr
                     You answered <b>{correctCount}</b> out of <b>{questions.length}</b> correctly.
                 </p>
             </div>
-            <div className="review-list">
+            <div className="score-list">
                 {results.map((q, idx) => (
-                    <div key={q.id} className={`review-item ${q.isCorrect ? "correct" : "incorrect"}`}>
-                        <div className="review-header">
+                    <div key={q.id} className={`score-item ${q.isCorrect ? "correct" : "incorrect"}`}>
+                        <div className="score-header">
                             <span><b>{idx + 1}.</b> {q.text}</span>
                             {q.isCorrect ? (
                                 <FaCheckCircle className="icon success" />
@@ -34,27 +34,26 @@ const QuizReview = ({ questions, answers, level, onRetake, onNextLevel, onShowPr
                                 <FaTimesCircle className="icon fail" />
                             )}
                         </div>
-                        <div className="review-answers">
+                        <div className="score-answers">
                             <div className={q.isCorrect ? "pass" : "fail"}><strong>Your answer:</strong> {q.userAnswer}</div>
-                            {!q.isCorrect && (
-                                <>
-                                    <div><strong>Correct answer:</strong> {q.correct}</div>
-                                    <div className="review-why">
-                                        <span><strong>Why:</strong> {q.why}</span> {Array.isArray(q.keywords) && q.keywords.length > 0 && (
-                                            <div className="q-tags">
-                                                {q.keywords.map((kw, j) => (
-                                                    <span key={j} className="q-tag">{kw}</span>
-                                                ))}
-                                            </div>
-                                        )}</div>
-                                </>
-                            )}
+                            {!q.isCorrect &&
+
+                                <div><strong>Correct answer:</strong> {q.correct}</div>}
+                            <div className="score-why">
+                                {!q.isCorrect ? <span><strong>Why:</strong> {q.why}</span> : <span></span>}
+                                {Array.isArray(q.keywords) && q.keywords.length > 0 && (
+                                    <div className="q-tags">
+                                        {q.keywords.map((kw, j) => (
+                                            <span key={j} className="q-tag">{kw}</span>
+                                        ))}
+                                    </div>
+                                )}</div>
                         </div>
                     </div>
                 ))}
             </div>
 
-            <div className="quiz-review-actions">
+            <div className="quiz-score-actions">
                 <button className="btn btn-outline-accent" onClick={onShowProgress}>Show Progress</button>
                 {passed && level < 3 ? (
                     <button className="btn btn-accent" onClick={onNextLevel}>{`Start Level ${level + 1}`} </button>
@@ -66,4 +65,4 @@ const QuizReview = ({ questions, answers, level, onRetake, onNextLevel, onShowPr
     );
 };
 
-export default QuizReview;
+export default QuizScore;

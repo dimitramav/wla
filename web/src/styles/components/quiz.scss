@@ -129,7 +129,7 @@
     }
 
 
-    .quiz-review {
+    .quiz-score {
 
         flex: 1 1 auto;
         display: flex;
@@ -154,7 +154,7 @@
             color: $error;
         }
 
-        .review-list {
+        .score-list {
             display: flex;
             margin-top: 1rem;
             flex: 1 1 auto;
@@ -164,7 +164,7 @@
 
         }
 
-        .review-item {
+        .score-item {
             border: 1px solid $border-color;
             border-left: 5px solid transparent;
             padding: 10px;
@@ -180,7 +180,7 @@
                 background-color: #fff6f6;
             }
 
-            .review-header {
+            .score-header {
                 display: flex;
                 justify-content: space-between;
                 align-items: center;
@@ -199,11 +199,11 @@
                 }
             }
 
-            .review-answers {
+            .score-answers {
                 margin-top: 2px;
             }
 
-            .review-why {
+            .score-why {
                 margin-top: 2px;
                 color: $text-secondary;
                 display: flex;
@@ -213,7 +213,7 @@
             }
         }
 
-        .quiz-review-actions {
+        .quiz-score-actions {
             margin-top: 10px;
             display: flex;
             flex-direction: row;
