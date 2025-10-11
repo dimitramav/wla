@@ -115,18 +115,7 @@
                 .q-bottom {
                     text-align: right;
 
-                    .q-tags {
-                        .q-tag {
-                            display: inline-block;
-                            background: $secondary-light;
-                            color: $text-secondary;
-                            padding: 3.2px 8px;
-                            border-radius: 3px;
-                            margin-right: 4.8px;
-                            font-size: 12.8px;
-                            font-weight: 700;
-                        }
-                    }
+
                 }
             }
         }
@@ -216,7 +205,11 @@
 
             .review-why {
                 margin-top: 2px;
-                color: $text-secondary
+                color: $text-secondary;
+                display: flex;
+                flex-direction: row;
+                justify-content: space-between;
+
             }
         }
 
@@ -226,6 +219,19 @@
             flex-direction: row;
             flex-shrink: 0;
             justify-content: space-between;
+        }
+    }
+
+    .q-tags {
+        .q-tag {
+            display: inline-block;
+            background: $secondary-light;
+            color: $text-secondary;
+            padding: 3.2px 8px;
+            border-radius: 3px;
+            margin-right: 4.8px;
+            font-size: 12.8px;
+            font-weight: 700;
         }
     }
 }

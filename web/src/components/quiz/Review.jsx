@@ -1,8 +1,7 @@
 
 import { FaCheckCircle, FaTimesCircle } from "react-icons/fa";
 
-const QuizReview = ({ questions, answers, level, onRetake, onNextLevel, onShowProgress }) => {
-    console.log(questions, answers);
+const QuizReview = ({ questions, answers, level, onRetake, onNextLevel, onShowProgress, keywords }) => {
     const results = questions.map(q => {
         const userAnswer = answers[q.id];
         const isCorrect = userAnswer === q.correct;
@@ -12,7 +11,6 @@ const QuizReview = ({ questions, answers, level, onRetake, onNextLevel, onShowPr
             isCorrect,
         };
     });
-
     const correctCount = results.filter(r => r.isCorrect).length;
     const passed = correctCount >= 12;
 
@@ -41,7 +39,14 @@ const QuizReview = ({ questions, answers, level, onRetake, onNextLevel, onShowPr
                             {!q.isCorrect && (
                                 <>
                                     <div><strong>Correct answer:</strong> {q.correct}</div>
-                                    <div className="review-why"><strong>Why:</strong> {q.why}</div>
+                                    <div className="review-why">
+                                        <span><strong>Why:</strong> {q.why}</span> {Array.isArray(q.keywords) && q.keywords.length > 0 && (
+                                            <div className="q-tags">
+                                                {q.keywords.map((kw, j) => (
+                                                    <span key={j} className="q-tag">{kw}</span>
+                                                ))}
+                                            </div>
+                                        )}</div>
                                 </>
                             )}
                         </div>
