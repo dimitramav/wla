@@ -4,7 +4,7 @@ import yaml from "js-yaml";
 import { RAG_CONTENT_DIR, KEYWORDS_YAML } from "./env.js";
 
 export function loadLevelKeywords(topic, level) {
-    const fp = path.join(RAG_CONTENT_DIR, `${level}/${KEYWORDS_YAML}`);
+    const fp = path.join(RAG_CONTENT_DIR, `${topic}/${KEYWORDS_YAML}`);
     const yml = yaml.load(fs.readFileSync(fp, "utf8"));
     const all = yml?.[topic]?.[String(level)] || [];
     return Array.from(new Set(all)); // dedupe

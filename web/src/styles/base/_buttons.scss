@@ -41,7 +41,7 @@
     &:disabled,
     &.is-disabled {
         background-color: $btn-disabled-bg;
-        border-color: $btn-disabled-bg;
+        border-color: $text-secondary;
         color: $text-secondary;
         cursor: not-allowed;
         opacity: 0.75;
@@ -79,7 +79,7 @@
     }
 }
 
-.btn-outline {
+.btn-outline-primary {
     background-color: transparent;
     color: $primary;
     border-color: $primary;
@@ -87,6 +87,17 @@
     &:hover:not(:disabled):not(.is-disabled) {
         background-color: $primary-light;
     }
+}
+
+.btn-outline-accent {
+    background-color: transparent;
+    color: $accent;
+    border-color: $accent;
+
+    &:hover:not(:disabled):not(.is-disabled) {
+        background-color: $accent-light;
+    }
+
 }
 
 .btn-success {

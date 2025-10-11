@@ -1,1 +1,141 @@
-  .quiz-panel {}
+.quiz-panel {
+    overflow: hidden;
+    height: inherit;
+    display: flex;
+    flex-direction: column;
+    max-height: 100%;
+    gap: 10px;
+
+    .error {
+        color: $error
+    }
+
+    .loading {
+        color: $text-muted;
+    }
+
+    .quiz-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-shrink: 0; // don't shrink
+
+        h2 {
+            margin: 0;
+        }
+
+        .quiz-controls {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+
+            label {
+                font-weight: bold;
+                color: $text-secondary;
+            }
+
+            select {
+                color: $text-primary;
+                padding: 4.8px 8px;
+
+                &:hover {
+                    cursor: pointer;
+                    border-radius: 4px;
+                    ;
+                }
+
+                &:focus-visible {
+                    outline: none;
+                    border-radius: 4px;
+                    box-shadow: inset 0 0 0 3px rgba($accent-light, 0.65);
+                }
+
+            }
+        }
+    }
+
+    .quiz-body {
+        max-height: inherit;
+        height: inherit;
+        overflow-y: auto;
+        overflow-x: hidden;
+
+        .q-slide-container {
+            height: inherit;
+            max-height: inherit;
+
+            .q-slide {
+                display: flex;
+                transition: all 0.5s ease;
+                height: inherit;
+
+                .q-card {
+                    flex: 0 0 100%;
+                    width: 100%;
+                    box-sizing: border-box;
+                    padding: 1rem;
+                    border: 1px solid $border-color;
+                    border-radius: 4px;
+                    display: flex;
+                    height: fit-content;
+                    flex-direction: column;
+                    gap: 15px;
+
+                    .q-top {
+                        display: flex;
+                        flex-direction: column;
+                        gap: 5px;
+
+                        .q-text {
+                            display: flex;
+                            flex-direction: row;
+                            gap: 10px
+                        }
+                    }
+
+                    .q-options {
+                        .q-opt {
+                            display: block;
+
+                            input[type="radio"] {
+                                margin-right: 8px;
+                                accent-color: $primary;
+
+                                &:hover {
+                                    cursor: pointer;
+                                }
+
+
+                            }
+                        }
+                    }
+
+                }
+
+                .q-bottom {
+                    text-align: right;
+
+                    .q-tags {
+                        .q-tag {
+                            display: inline-block;
+                            background: $secondary-light;
+                            color: $text-secondary;
+                            padding: 3.2px 8px;
+                            border-radius: 3px;
+                            margin-right: 4.8px;
+                            font-size: 12.8px;
+                            font-weight: 700;
+                        }
+                    }
+                }
+            }
+        }
+
+    }
+
+    .quiz-navigation {
+        text-align: right;
+        flex-shrink: 0; // don't shrink
+        padding: 2px;
+    }
+}

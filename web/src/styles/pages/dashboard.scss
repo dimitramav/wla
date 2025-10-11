@@ -22,6 +22,8 @@
                 padding: 20px;
                 height: inherit;
                 gap: 10px;
+                max-height: calc(100% - 120px);
+                height: inherit;
 
                 .drawer-panel {
                     border: 1px solid $border-color;
@@ -29,10 +31,11 @@
                     padding: 20px;
                     border-radius: 6px;
                     height: fit-content;
-                    max-height: 37%;
                     animation: slideUp 0.8s ease-out forwards;
                     transform: translateY(100%);
                     opacity: 0;
+                    overflow: hidden;
+                    max-height: inherit;
                 }
 
                 @keyframes slideUp {

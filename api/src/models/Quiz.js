@@ -1,4 +1,4 @@
-const mongoose = require("mongoose");
+import mongoose from "mongoose";
 
 const SourceSpan = new mongoose.Schema({
     doc: String,
@@ -19,7 +19,7 @@ const Question = new mongoose.Schema({
 
 const QuizSchema = new mongoose.Schema({
     userId: { type: mongoose.Schema.Types.ObjectId, index: true, required: true },
-    lesson: { type: String, index: true, required: true },
+    topic: { type: String, index: true, required: true },
     docsetHash: { type: String, index: true, required: true },
     level: { type: Number, enum: [1, 2, 3], required: true },
     seed: { type: String },
@@ -32,4 +32,4 @@ const QuizSchema = new mongoose.Schema({
     submittedAt: Date,
 }, { timestamps: true });
 
-module.exports = mongoose.model("Quiz", QuizSchema);
+export default mongoose.model("Quiz", QuizSchema);

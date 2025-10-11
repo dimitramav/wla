@@ -3,6 +3,7 @@ import { Router } from "express";
 import { TopicDB } from "../db/TopicDB.js";
 import { DocsetDB } from "../db/DocsetDB.js";
 import { readRagDocsetsJson, getSummaryFromRag } from "../ragClient.js";
+import { hash } from "bcryptjs";
 
 const router = Router();
 
@@ -65,12 +66,11 @@ router.get("/:slug/summary", async (req, res) => {
       promptHash: out.promptHash,
       files: ds.files || live.files || [],
     });
-
     return res.json({
       topic,
+      hash: latestHash,
       bullets: updated.summaryBullets,
       promptHash: updated.promptHash || null,
-      source: "fresh",
     });
   } catch (e) {
     console.error("summary route failed:", e);
