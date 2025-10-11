@@ -12,14 +12,14 @@
 
         .content-grid {
             display: grid;
-            grid-template-columns: 45% 55%;
+            grid-template-columns: 60% 40%;
             height: inherit;
 
             .tutors-panel {
                 display: flex;
                 flex-direction: column;
                 overflow: hidden;
-                padding: 20px;
+                padding: 10px;
                 height: inherit;
                 gap: 10px;
                 max-height: calc(100% - 120px);

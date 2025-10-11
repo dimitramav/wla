@@ -5,7 +5,7 @@ import PdfViewer from '../components/viewers/SingleDocument';
 import Navbar from '../components/layout/Navbar';
 import Footer from "../components/layout/Footer";
 import Progress from '../components/viewers/Progress';
-import Quiz from '../components/viewers/Quiz';
+import Quiz from '../components/quiz/Quiz';
 import { useState } from 'react';
 
 const Dashboard = () => {

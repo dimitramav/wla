@@ -138,4 +138,94 @@
         flex-shrink: 0; // don't shrink
         padding: 2px;
     }
+
+
+    .quiz-review {
+
+        flex: 1 1 auto;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+
+        .quiz-results {
+            display: flex;
+            flex-direction: column;
+            flex-shrink: 0;
+        }
+
+        h3 {
+            margin: 0;
+        }
+
+        .pass {
+            color: $success;
+        }
+
+        .fail {
+            color: $error;
+        }
+
+        .review-list {
+            display: flex;
+            margin-top: 1rem;
+            flex: 1 1 auto;
+            flex-direction: column;
+            gap: 10px;
+            overflow-y: auto;
+
+        }
+
+        .review-item {
+            border: 1px solid $border-color;
+            border-left: 5px solid transparent;
+            padding: 10px;
+            border-radius: 4px;
+
+            &.correct {
+                border-left-color: $success;
+                background-color: #f6fff6;
+            }
+
+            &.incorrect {
+                border-left-color: $error;
+                background-color: #fff6f6;
+            }
+
+            .review-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+
+                .icon {
+                    font-size: 18px;
+                    margin-left: 8px;
+
+                    &.success {
+                        color: $success;
+                    }
+
+                    &.fail {
+                        color: $error;
+                    }
+                }
+            }
+
+            .review-answers {
+                margin-top: 2px;
+            }
+
+            .review-why {
+                margin-top: 2px;
+                color: $text-secondary
+            }
+        }
+
+        .quiz-review-actions {
+            margin-top: 10px;
+            display: flex;
+            flex-direction: row;
+            flex-shrink: 0;
+            justify-content: space-between;
+        }
+    }
 }
