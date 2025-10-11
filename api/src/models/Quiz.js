@@ -1,3 +1,4 @@
+// api/src/models/Quiz.js
 import mongoose from "mongoose";
 
 const SourceSpan = new mongoose.Schema({
@@ -12,7 +13,7 @@ const Question = new mongoose.Schema({
     kind: { type: String, enum: ["mcq", "yesno"] },
     text: String,
     options: [String],
-    correct: String,          // stored server-side only
+    correct: String,
     keywords: [String],
     source_spans: [SourceSpan],
 }, { _id: false });
@@ -30,6 +31,8 @@ const QuizSchema = new mongoose.Schema({
     passed: Boolean,
     startedAt: { type: Date, default: () => new Date() },
     submittedAt: Date,
-}, { timestamps: true });
+}, {
+    timestamps: true, collection: "quizzes",
+});
 
 export default mongoose.model("Quiz", QuizSchema);

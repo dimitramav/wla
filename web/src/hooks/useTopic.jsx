@@ -6,7 +6,7 @@ export function useTopic() {
     const [bullets, setBullets] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-
+    const [docsetHash, setDocsetHash] = useState(null);
     useEffect(() => {
         let alive = true;
         setLoading(true);
@@ -15,6 +15,7 @@ export function useTopic() {
             .then(data => {
                 if (!alive) return;
                 setBullets(data?.bullets || []);
+                setDocsetHash(data?.hash || null);
                 setError(null);
             })
             .catch(e => {
@@ -29,5 +30,5 @@ export function useTopic() {
         return () => { alive = false; };
     }, [topic]);
 
-    return { topic, bullets, loading, error };
+    return { topic, bullets, loading, error, docsetHash };
 }

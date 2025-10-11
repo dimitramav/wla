@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { startQuiz } from "../../api/quiz";
 import { useTopic } from '../../hooks/useTopic';
-
+import { useAuth } from "../../context/AuthContext";
 
 const Quiz = () => {
     const [level, setLevel] = useState(1);
@@ -12,8 +12,9 @@ const Quiz = () => {
     const [error, setError] = useState(null);
     const [currentIndex, setCurrentIndex] = useState(0);
 
-    const { topic } = useTopic();
-
+    const { topic, docsetHash } = useTopic();
+    const { user } = useAuth();
+    const uid = user?.id || null;
     async function loadQuiz(targetLevel = level) {
         setLoading(true);
         setError(null);
@@ -22,7 +23,7 @@ const Quiz = () => {
         setQuizId(null);
         setCurrentIndex(0);
         try {
-            const data = await startQuiz(topic, targetLevel);
+            const data = await startQuiz(topic, targetLevel, uid, docsetHash);
             setQuizId(data.quizId || null);
             setQuestions(Array.isArray(data.questions) ? data.questions : []);
         } catch (e) {
@@ -34,9 +35,11 @@ const Quiz = () => {
     }
 
     useEffect(() => {
-        loadQuiz(level);
+        if (docsetHash && uid) {
+            loadQuiz(level);
+        }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+    }, [docsetHash, uid]);
 
     const allAnswered =
         questions.length > 0 && questions.every((q) => answers[q.id] !== undefined);

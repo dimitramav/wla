@@ -1,68 +1,67 @@
-import { qg } from "../ragClient.js";
-import { LEVELS } from '../lib/levels.js';
-import { loadLevelKeywords } from '../lib/keywords.js';
-import Quiz from '../models/Quiz.js';
-import Docset from '../models/Docset.js';
-import Router from "express"
+// api/src/routes/quiz.js
+import { Router } from "express";
 import mongoose from "mongoose";
-
+import { qg } from "../ragClient.js";
+import { LEVELS } from "../lib/levels.js";
+import { loadLevelKeywords } from "../lib/keywords.js";
+import { QuizDB } from "../db/QuizDB.js";
 
 const router = Router({ mergeParams: true });
 
 router.post("/:topic/quiz/start", async (req, res) => {
     try {
         const { topic } = req.params;
-        const level = Number(req.body.level || 1);
-
-        if (![1, 2, 3].includes(level)) {
+        const { level = 1, uid, docsetHash } = req.body;
+        // — basic input checks —
+        const lvl = Number(level);
+        if (![1, 2, 3].includes(lvl)) {
             return res.status(400).json({ error: { message: "Invalid level" } });
         }
-
-        const docset = await Docset.findOne({ topic }).sort({ updatedAt: -1 }).lean();
-        if (!docset?.hash) {
-            return res.status(409).json({ error: { message: "Docset not ingested yet" } });
+        if (!uid || !mongoose.Types.ObjectId.isValid(uid)) {
+            return res.status(400).json({ error: { message: "Missing or invalid uid" } });
+        }
+        if (!docsetHash) {
+            return res.status(400).json({ error: { message: "Missing or invalid docset" } });
         }
 
-        const baseKeywords = loadLevelKeywords(topic, level);
+
+        // — keywords + per-level config —
+        const baseKeywords = loadLevelKeywords(topic, lvl);
         if (!baseKeywords.length) {
             return res.status(400).json({ error: { message: "No keywords for level" } });
         }
+        const cfg = LEVELS[lvl];
 
-        const cfg = LEVELS[level];
-
+        // — call FastAPI /qg —
         const payload = {
-            hash: docset.hash,
-            level,
+            hash: docsetHash,
+            level: lvl,
             keywords: baseKeywords,
             mix: cfg.mix,
-            seed: "default-seed",
+            seed: "default-seed",                     // swap to user's seed later if you wish
             difficulty_profile: cfg.difficulty_profile,
-            weak_keywords: [],
+            weak_keywords: [],                        // add from Progress later (Day 10)
         };
-
         const data = await qg(payload);
-        const qs = data.questions;
+        const qs = data?.questions || [];
         if (!Array.isArray(qs) || qs.length !== 15) {
             return res.status(502).json({ error: { message: "QG invalid response" } });
         }
 
-        const quiz = await Quiz.create({
-            userId: new mongoose.Types.ObjectId('000000000000000000000000'),
+        const quiz = await QuizDB.createStarted({
+            userId: uid,
             topic,
-            docsetHash: docset.hash,
-            level,
+            docsetHash: docsetHash,
+            level: lvl,
             seed: "default-seed",
-            status: "started",
-            questions: qs, // includes 'correct'
-        });
-
-        // 🔥 Send full questions back, including 'correct'
-        return res.json({
-            quizId: String(quiz._id),
-            level,
             questions: qs,
         });
 
+        return res.json({
+            quizId: String(quiz._id),
+            level: lvl,
+            questions: qs, // includes 'correct'
+        });
     } catch (e) {
         console.error(e);
         return res.status(500).json({ error: { message: "Failed to start quiz" } });

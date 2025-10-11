@@ -47,6 +47,7 @@ router.get("/:slug/summary", async (req, res) => {
         bullets: ds.summaryBullets,
         model: ds.model || null,
         promptHash: ds.promptHash || null,
+        hash: latestHash,
         source: "cache",
       });
     }
