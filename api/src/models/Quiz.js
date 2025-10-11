@@ -15,6 +15,7 @@ const Question = new mongoose.Schema({
     options: [String],
     correct: String,
     keywords: [String],
+    why: { type: String, default: "" },
     source_spans: [SourceSpan],
 }, { _id: false });
 

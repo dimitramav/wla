@@ -26,6 +26,7 @@ class Question(BaseModel):
     text: str
     options: Optional[List[str]] = None
     correct: str
+    why: str = ""
     keywords: List[str]
     source_spans: List[SourceSpan]
 

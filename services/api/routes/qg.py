@@ -46,6 +46,7 @@ def qg(req: QGRequest):
             text=f"[{kw}] Which option aligns best with the material?",
             options=["A) …", "B) …", "C) …", "D) …"],
             correct="B",
+            why="Because it matches the source text.",
             keywords=[kw],
             source_spans=[span(i)]
         ))
@@ -58,6 +59,7 @@ def qg(req: QGRequest):
             text=f"[{kw}] True/False: The statement is supported by the text.",
             options=["Yes", "No"],
             correct=rnd.choice(["Yes", "No"]),
+            why="Based on the information provided.",        
             keywords=[kw],
             source_spans=[span(100 + i)]
         ))
