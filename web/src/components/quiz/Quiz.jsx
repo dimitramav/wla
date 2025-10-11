@@ -30,7 +30,7 @@ const Quiz = () => {
     if (questions.length === 0) return <Loader message="No questions available..." />;
     return (
         <div className="quiz-panel">
-            <QuizHeader level={level} onLevelChange={handleLevelChange} />
+            <QuizHeader level={level} onLevelChange={handleLevelChange} selectLevel={submitted === false} />
 
             {submitted ? (
                 <QuizScore
