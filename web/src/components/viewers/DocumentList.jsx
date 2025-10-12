@@ -29,7 +29,7 @@ const DocumentList = ({ onSelect }) => {
     // TreeView Structure with topic as root
     const renderTree = (docs) => {
         return (
-            <TreeView nodeLabel={<span className="node-label">{topic}</span>} defaultCollapsed={false}>
+            <TreeView nodeLabel={<div className="node-label"><h4>{topic}</h4></div>} defaultCollapsed={false}>
                 {docs.map(doc => (
                     <TreeView
                         key={doc.url}
@@ -41,7 +41,8 @@ const DocumentList = ({ onSelect }) => {
                                     onSelect(doc.url);
                                 }}
                             >
-                                {doc.title}
+                                <p>
+                                    {doc.title}</p>
                             </button>
                         }
                         defaultCollapsed={true}

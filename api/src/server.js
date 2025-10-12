@@ -10,6 +10,7 @@ import { connectDB } from './db/connection.js';
 import topicsRouter from './routes/topics.js';
 import docsRouter from './routes/docs.js';
 import authRouter from './routes/auth.js';
+import quizRouter from './routes/quiz.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -56,6 +57,8 @@ app.use('/api/auth', authRouter);
 // app.use('/api/topics', authRequired, topicsRouter);
 app.use('/api/topics', topicsRouter);
 app.use('/api', docsRouter);
+app.use("/api", quizRouter);
+
 
 app.get('/health', (_req, res) => res.json({ ok: true, service: 'express' }));
 

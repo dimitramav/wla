@@ -12,9 +12,40 @@
 
         .content-grid {
             display: grid;
-            grid-template-columns: 45% 55%;
+            grid-template-columns: 60% 40%;
             height: inherit;
 
+            .tutors-panel {
+                display: flex;
+                flex-direction: column;
+                overflow: hidden;
+                padding: 10px;
+                height: inherit;
+                gap: 10px;
+                max-height: calc(100% - 120px);
+                height: inherit;
+
+                .drawer-panel {
+                    border: 1px solid $border-color;
+                    overflow-y: auto;
+                    padding: 20px;
+                    border-radius: 6px;
+                    height: fit-content;
+                    animation: slideUp 0.8s ease-out forwards;
+                    transform: translateY(100%);
+                    opacity: 0;
+                    overflow: hidden;
+                    max-height: inherit;
+                }
+
+                @keyframes slideUp {
+                    to {
+                        transform: translateY(0);
+                        opacity: 1;
+                    }
+                }
+
+            }
 
             .documents-panel {
                 overflow: auto;

@@ -1,6 +1,6 @@
 import { useTopic } from '../../hooks/useTopic';
 
-const Theory = () => {
+const Theory = ({ onShow }) => {
     const { topic, bullets, loading, error } = useTopic();
 
     return (
@@ -48,8 +48,12 @@ const Theory = () => {
             )}
 
             <div className="panel-buttons">
-                <button className="btn btn-outline">Show Progress</button>
-                <button className="btn btn-outline">Start Quiz</button>
+                <button className="btn btn-outline-primary" onClick={onShow.bind(this, 'progress')}><p>
+                    Show Progress</p>
+                </button>
+                <button className="btn btn-outline-primary" onClick={onShow.bind(this, 'quiz')}><p>
+                    Start Quiz</p>
+                </button>
             </div>
         </div>
     );
