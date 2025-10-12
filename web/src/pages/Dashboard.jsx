@@ -24,7 +24,7 @@ const Dashboard = () => {
                         <TheoryPanel onShow={handleShow}
                         />
                         {activeDrawer === 'progress' && <div className='drawer-panel'><Progress /></div>}
-                        {activeDrawer === 'quiz' && <div className='drawer-panel'><Quiz /></div>}
+                        {activeDrawer === 'quiz' && <div className='drawer-panel'><Quiz onShowProgress={() => setActiveDrawer("progress")} /></div>}
                     </div>
                     <div className="documents-panel">
                         <div className="documents-grid">

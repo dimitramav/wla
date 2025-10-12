@@ -7,7 +7,7 @@ import QuizHeader from './QuizHeader';
 import QuizQuestion from './QuizQuestion';
 import QuizScore from './QuizScore';
 import { submitQuiz } from '../../api/quiz';
-const Quiz = () => {
+const Quiz = ({ onShowProgress }) => {
     const { topic, docsetHash } = useTopic();
     const PASS_THRESHOLD = import.meta.env.PASS_THRESHOLD;
 
@@ -38,7 +38,7 @@ const Quiz = () => {
                     questions={questions}
                     answers={answers}
                     level={level}
-                    onShowProgress={() => alert("Show progress not implemented")}
+                    onShowProgress={onShowProgress}
                     onNewQuiz={(quizLevel) => { setSubmitted(false); handleLevelChange(quizLevel); }}
                 />
             ) : (
