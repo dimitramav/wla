@@ -26,7 +26,7 @@ const Quiz = () => {
     } = useQuiz(topic, docsetHash, user?.id);
     const [submitted, setSubmitted] = useState(false);
     if (error) return <div className="error">{error}</div>;
-    if (loading) return <Loader message="Preparing questions..." />;
+    if (!loading) return <Loader message="Preparing questions..." />;
     if (questions.length === 0) return <Loader message="No questions available..." />;
     return (
         <div className="quiz-panel">
