@@ -39,8 +39,7 @@ const Quiz = () => {
                     answers={answers}
                     level={level}
                     onShowProgress={() => alert("Show progress not implemented")}
-                    onNextLevel={() => handleLevelChange(level + 1)}
-                    onRetake={() => handleLevelChange(level)}
+                    onNewQuiz={(quizLevel) => { setSubmitted(false); handleLevelChange(quizLevel); }}
                 />
             ) : (
                 <>

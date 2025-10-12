@@ -2,7 +2,7 @@
 import { FaCheckCircle, FaTimesCircle } from "react-icons/fa";
 const PASS_THRESHOLD = import.meta.env.PASS_THRESHOLD;
 
-const QuizScore = ({ questions, answers, level, onRetake, onNextLevel, onShowProgress, keywords }) => {
+const QuizScore = ({ questions, answers, level, onNewQuiz, onShowProgress, keywords }) => {
     const results = questions.map(q => {
         const userAnswer = answers[q.id];
         const isCorrect = userAnswer === q.correct;
@@ -58,9 +58,9 @@ const QuizScore = ({ questions, answers, level, onRetake, onNextLevel, onShowPro
             <div className="quiz-score-actions">
                 <button className="btn btn-outline-accent" onClick={onShowProgress}>Show Progress</button>
                 {passed && level < 3 ? (
-                    <button className="btn btn-accent" onClick={onNextLevel}>{`Start Level ${level + 1}`} </button>
+                    <button className="btn btn-accent" onClick={() => onNewQuiz(level + 1)}>{`Start Level ${level + 1}`} </button>
                 ) : (
-                    <button className="btn btn-accent" onClick={onRetake}>{`Repeat Level ${level}`}</button>
+                    <button className="btn btn-accent" onClick={() => onNewQuiz(level)}>{`Repeat Level ${level}`}</button>
                 )}
             </div>
         </div>

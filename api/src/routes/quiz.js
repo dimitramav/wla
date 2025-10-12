@@ -91,7 +91,6 @@ router.post("/:topic/quiz/submit", async (req, res, next) => {
             const isCorrect = userAnswer === q.correct; // simple strict compare
             const kws = Array.isArray(q.keywords) ? q.keywords : [];
             for (const kw of kws) {
-                console.log(lvl.keywordStats);
                 const statIndex = lvl.keywordStats.findIndex(s => s.keyword === kw);
                 if (statIndex === -1) {
                     // If stat doesn't exist, create and push new one
