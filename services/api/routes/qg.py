@@ -45,7 +45,7 @@ def qg(req: QGRequest):
             kind="mcq",
             text=f"[{kw}] Which option aligns best with the material?",
             options=["A) …", "B) …", "C) …", "D) …"],
-            correct="B",
+            correct="B) …",
             why="Because it matches the source text.",
             keywords=[kw],
             source_spans=[span(i)]
