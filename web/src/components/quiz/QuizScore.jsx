@@ -1,5 +1,6 @@
 
 import { FaCheckCircle, FaTimesCircle } from "react-icons/fa";
+const PASS_THRESHOLD = import.meta.env.PASS_THRESHOLD;
 
 const QuizScore = ({ questions, answers, level, onRetake, onNextLevel, onShowProgress, keywords }) => {
     const results = questions.map(q => {
@@ -12,7 +13,8 @@ const QuizScore = ({ questions, answers, level, onRetake, onNextLevel, onShowPro
         };
     });
     const correctCount = results.filter(r => r.isCorrect).length;
-    const passed = correctCount >= 12;
+    const passed = correctCount >= PASS_THRESHOLD;
+    console.log("PASS_THRESHOLD", PASS_THRESHOLD, typeof PASS_THRESHOLD);
 
     return (
         <div className="quiz-score">

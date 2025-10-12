@@ -2,9 +2,7 @@ import { useProfile } from "../../hooks/useProfile";
 import { useAuth } from "../../context/AuthContext";
 const QuizHeader = ({ topic, level, onLevelChange, selectLevel }) => {
     const { user } = useAuth();
-    console.log(topic, user);
     const { unlockedLevel } = useProfile(topic, user?.id);
-    console.log("unlockedLevel", unlockedLevel);
 
     return (
         <div className="quiz-header">

@@ -6,9 +6,10 @@ import Loader from '../layout/widgets/Loader';
 import QuizHeader from './QuizHeader';
 import QuizQuestion from './QuizQuestion';
 import QuizScore from './QuizScore';
-
+import { submitQuiz } from '../../api/quiz';
 const Quiz = () => {
     const { topic, docsetHash } = useTopic();
+    const PASS_THRESHOLD = import.meta.env.PASS_THRESHOLD;
 
     const { user } = useAuth();
     const {
@@ -74,18 +75,41 @@ const Quiz = () => {
                             <button
                                 className="btn btn-accent"
                                 disabled={!allAnswered || loading}
-                                onClick={() => {
-                                    console.log("Submit payload:", { quizId, topic, level, answers });
-                                    setSubmitted(true);
+                                onClick={async () => {
+                                    const correctCount = questions.reduce((acc, q) => {
+                                        return acc + (answers[q.id] === q.correct ? 1 : 0);
+                                    }, 0);
+                                    const passed = correctCount >= PASS_THRESHOLD;
+                                    try {
+                                        const success = await submitQuiz(
+                                            topic,
+                                            quizId,
+                                            correctCount,
+                                            passed,
+                                            user?.id,
+                                            answers
+                                        );
+
+                                        if (success) {
+                                            setSubmitted(true);
+                                        } else {
+                                            alert("Submission failed. Try again.");
+                                        }
+                                    } catch (err) {
+                                        console.error("Submission error:", err);
+                                        alert("Failed to submit quiz.");
+                                    }
                                 }}
+
                             >
                                 Submit
                             </button>
                         )}
                     </div>
                 </>
-            )}
-        </div>
+            )
+            }
+        </div >
 
     );
 };
