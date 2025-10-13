@@ -7,19 +7,31 @@
     height: fit-content;
     max-height: 50%;
 
-    .panel-topic {
-        color: $text-muted;
-        max-height: fit-content;
-        margin: 0px;
+    .header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
 
-        &.panel-message {
+        h1 {
+            margin: 0px;
+
+        }
+
+
+        .panel-topic {
             color: $text-muted;
-        }
+            max-height: fit-content;
+            margin: 0px;
 
-        &.panel-error {
-            color: $error;
-        }
+            &.panel-message {
+                color: $text-muted;
+            }
 
+            &.panel-error {
+                color: $error;
+            }
+
+        }
     }
 
     .bullet-list {

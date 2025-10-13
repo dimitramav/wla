@@ -8,7 +8,6 @@ import "./styles/main.scss";
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth();
   if (loading) return null;
-  console.log(user)
   if (!user) return <Navigate to="/login" replace />;
   return children;
 }

@@ -1,17 +1,13 @@
 import { useState } from 'react';
 import { useQuiz } from '../../hooks/useQuiz';
-import { useTopic } from '../../hooks/useTopic';
-import { useAuth } from "../../context/AuthContext";
+
 import Loader from '../layout/widgets/Loader';
-import QuizHeader from './QuizHeader';
+import Header from '../layout/Header';
 import QuizQuestion from './QuizQuestion';
 import QuizScore from './QuizScore';
 import { submitQuiz } from '../../api/quiz';
-const Quiz = ({ onShowProgress }) => {
-    const { topic, docsetHash } = useTopic();
-    const PASS_THRESHOLD = import.meta.env.PASS_THRESHOLD;
+const Quiz = ({ topic, docsetHash, userId, PASS_THRESHOLD, onShowProgress }) => {
 
-    const { user } = useAuth();
     const {
         level,
         loading,
@@ -24,14 +20,14 @@ const Quiz = ({ onShowProgress }) => {
         handleLevelChange,
         handleAnswer,
         setCurrentIndex,
-    } = useQuiz(topic, docsetHash, user?.id);
+    } = useQuiz(topic, docsetHash, userId);
     const [submitted, setSubmitted] = useState(false);
     if (error) return <div className="error">{error}</div>;
     if (loading) return <Loader message="Preparing questions..." />;
     if (questions.length === 0) return <Loader message="No questions available..." />;
     return (
         <div className="quiz-panel">
-            <QuizHeader topic={topic} level={level} onLevelChange={handleLevelChange} selectLevel={submitted === false} />
+            <Header panel="quiz" title="Quiz" topic={topic} level={level} onLevelChange={handleLevelChange} selectLevel={submitted === false} />
 
             {submitted ? (
                 <QuizScore
@@ -85,7 +81,7 @@ const Quiz = ({ onShowProgress }) => {
                                             quizId,
                                             correctCount,
                                             passed,
-                                            user?.id,
+                                            userId,
                                             answers
                                         );
 

@@ -5,7 +5,7 @@ const Theory = ({ onShow }) => {
 
     return (
         <div className="theory-panel">
-            <div>
+            <div className='header'>
                 <h1>Theory at a glance</h1>
                 <p className="panel-topic">Topic: {topic}</p>
             </div>

@@ -1,7 +1,7 @@
 .dashboard-grid {
     display: grid;
     grid-template-columns: 15% 85%;
-    padding-right: 40px;
+    padding-right: 20px;
     height: inherit;
     overflow: hidden;
 
@@ -22,7 +22,7 @@
                 padding: 10px;
                 height: inherit;
                 gap: 10px;
-                max-height: calc(100% - 120px);
+                max-height: calc(100% - 90px);
                 height: inherit;
 
                 .drawer-panel {

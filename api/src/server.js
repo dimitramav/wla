@@ -12,6 +12,7 @@ import docsRouter from './routes/docs.js';
 import authRouter from './routes/auth.js';
 import quizRouter from './routes/quiz.js';
 import profileRouter from './routes/profile.js';
+import progressRouter from './routes/progress.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -59,6 +60,7 @@ app.use('/api/topics', topicsRouter);
 app.use('/api', docsRouter);
 app.use("/api", quizRouter);
 app.use("/api", profileRouter);
+app.use("/api", progressRouter);
 
 app.get('/health', (_req, res) => res.json({ ok: true, service: 'express' }));
 
