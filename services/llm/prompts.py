@@ -64,7 +64,7 @@ Rules:
 - The question and all answer options must be grammatically correct, well-formed English.
 - Statement must be verifiably True or False from the excerpt only.
 - options must be exactly ["Yes","No"].
-- "why" must be a complete sentence, max 140 characters, grounded in the excerpt.
+- "why" must be a complete sentence, max 100 characters, grounded in the excerpt.
 - You are part of a set of questions where approximately {application_share}% should involve applying the concept, not just recalling facts.
 
 Difficulty Settings (use these to guide tone and depth):

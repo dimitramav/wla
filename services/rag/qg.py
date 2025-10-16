@@ -8,7 +8,7 @@ from dataclasses import dataclass
 # Configuration
 MAX_CHARS_PER_Q = 450
 POOL_TOP = 24
-MAX_RETRIES = 3
+MAX_RETRIES = 2
 
 @dataclass
 class QuestionTemplate:
@@ -94,76 +94,50 @@ def _pick_plan_by_keywords(
 
     return plan[:needed]
 
-def _generate_batch_questions(
-    excerpts: List[str],
+def _generate_question(
+    excerpt: str,
     seed: int,
-    keywords: List[Optional[str]],
+    keyword: Optional[str],
     template: QuestionTemplate,
     dp: Optional[Dict] = None
-) -> List[Dict]:
-    """Generate multiple questions in one LLM call"""
-    # Combine all excerpts and keywords into one prompt
-    prompts = []
-    for i, (excerpt, keyword) in enumerate(zip(excerpts, keywords)):
-        prompt = template.template.format(
+) -> Dict:
+    """Generate a single question with retries"""
+    for attempt in range(MAX_RETRIES):
+        user = template.template.format(
             excerpt=excerpt,
             context_span=dp.get("context_span", 1),
             distractor_strength=dp.get("distractor_strength", 1),
             application_share=int(dp.get("application_share", 0.0) * 100)
         )
         if keyword:
-            prompt += f"\n\nFocus on concept: {keyword}"
-        prompts.append(f"Question {i+1}:\n{prompt}")
-    
-    combined_prompt = "\n\n---\n\n".join(prompts)
-    
-    # Single LLM call for all questions
-    out = generate_json(SYSTEM_QG, combined_prompt, seed=seed, temperature=0.0)
-    
-    if not isinstance(out, dict) or "questions" not in out:
-        # Fallback: return defaults for all questions
-        return [{
-            "kind": template.kind,
-            "text": template.default_text,
-            "options": template.options,
-            "correct": template.default_correct,
-            "why": "Grounded in the excerpt."
-        } for _ in excerpts]
-    
-    results = []
-    for q in out.get("questions", []):
-        text = q.get("text", "").strip()
-        correct = str(q.get("correct", "")).strip().upper().replace(")", "")
+            user += f"\n\nFocus on concept: {keyword}"
+            
+        out = generate_json(SYSTEM_QG, user, seed=seed + attempt, temperature=0.0)
+        
+        if not isinstance(out, dict):
+            continue
+            
+        text = out.get("text", "").strip()
+        correct = str(out.get("correct", "")).strip().upper().replace(")", "")
         
         if template.validate_response(text, correct):
-            results.append({
+            return {
                 "kind": template.kind,
                 "text": text,
-                "options": template.options if template.kind == "yesno" else q.get("options", template.options),
+                "options": template.options if template.kind == "yesno" else out.get("options", template.options),
                 "correct": "Yes" if template.kind == "yesno" and correct.lower().startswith("y") else 
                           "No" if template.kind == "yesno" else correct,
-                "why": q.get("why", "Grounded in the excerpt.")
-            })
-        else:
-            results.append({
-                "kind": template.kind,
-                "text": template.default_text,
-                "options": template.options,
-                "correct": template.default_correct,
-                "why": "Grounded in the excerpt."
-            })
-            
-    # Ensure we return same number of questions as inputs
-    while len(results) < len(excerpts):
-        results.append({
-            "kind": template.kind,
-            "text": template.default_text,
-            "options": template.options,
-            "correct": template.default_correct,
-            "why": "Grounded in the excerpt."
-        })
-        
-    return results
+                "why": out.get("why", "Grounded in the excerpt.")
+            }
+
+    # Default fallback
+    return {
+        "kind": template.kind,
+        "text": template.default_text,
+        "options": template.options,
+        "correct": template.default_correct,
+        "why": "Grounded in the excerpt."
+    }
 
 def _create_question_object(
     q: Dict,
@@ -209,41 +183,25 @@ def generate_qg(
     # Generate all questions
     plan = _pick_plan_by_keywords(pool, keywords, mcq_n + yn_n)
     
-    # Prepare MCQ batch
-    mcq_excerpts = []
-    mcq_keywords = []
-    mcq_meta = []
+    # MCQs
     for i in range(min(mcq_n, len(plan))):
         text, meta, matched_kw = plan[i]
-        mcq_excerpts.append(_trim(text))
+        excerpt = _trim(text)
         assigned_kw = matched_kw or (keywords[i % len(keywords)] if keywords else None)
-        mcq_keywords.append(assigned_kw)
-        mcq_meta.append(meta)
+        
+        q = _generate_question(excerpt,  i, assigned_kw, MCQ_TEMPLATE, difficulty_profile)
+        qid = f"q-{topic}-{docset_hash[:6]}-mcq-{i+1}"
+        questions.append(_create_question_object(q, qid, assigned_kw, meta))
 
-    # Generate all MCQs in one call
-    if mcq_excerpts:
-        mcq_results = _generate_batch_questions(mcq_excerpts, seed, mcq_keywords, MCQ_TEMPLATE, difficulty_profile)
-        for i, (q, kw, meta) in enumerate(zip(mcq_results, mcq_keywords, mcq_meta)):
-            qid = f"q-{topic}-{docset_hash[:6]}-mcq-{i+1}"
-            questions.append(_create_question_object(q, qid, kw, meta))
-
-    # Prepare YN batch
-    yn_excerpts = []
-    yn_keywords = []
-    yn_meta = []
+    # Yes/No
     for j in range(min(yn_n, max(0, len(plan) - mcq_n))):
         text, meta, matched_kw = plan[mcq_n + j]
-        yn_excerpts.append(_trim(text))
+        excerpt = _trim(text)
         assigned_kw = matched_kw or (keywords[(mcq_n + j) % len(keywords)] if keywords else None)
-        yn_keywords.append(assigned_kw)
-        yn_meta.append(meta)
-
-    # Generate all YN questions in one call
-    if yn_excerpts:
-        yn_results = _generate_batch_questions(yn_excerpts, seed + 100, yn_keywords, YN_TEMPLATE, difficulty_profile)
-        for j, (q, kw, meta) in enumerate(zip(yn_results, yn_keywords, yn_meta)):
-            qid = f"q-{topic}-{docset_hash[:6]}-yn-{j+1}"
-            questions.append(_create_question_object(q, qid, kw, meta))
+        
+        q = _generate_question(excerpt,  100 + j, assigned_kw, YN_TEMPLATE, difficulty_profile)
+        qid = f"q-{topic}-{docset_hash[:6]}-yn-{j+1}"
+        questions.append(_create_question_object(q, qid, assigned_kw, meta))
 
     demo_user = "\n\n".join(_trim(p[0], 200) for p in pool[:8])
     return {
