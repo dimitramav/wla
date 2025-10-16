@@ -33,7 +33,7 @@ const QuizQuestion = ({ question, index, answer, onAnswer }) => {
                                 checked={answer === opt}
                                 onChange={() => onAnswer(id, opt)}
                             />
-                            {opt}
+                            {opt === "Yes" ? "True" : "False"}
                         </label>
                     ))
                 )}

@@ -17,6 +17,7 @@ def qg(req: QGRequest, topic: str = Query(...)):
         mix=req.mix,
         seed=req.seed,            # string seed → converted inside generator
         keywords=req.keywords,
+        difficulty_profile=req.difficulty_profile,
     )
     if not out["questions"]:
         raise HTTPException(409, "No chunks available for this hash. Did you ingest this topic?")

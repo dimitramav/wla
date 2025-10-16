@@ -26,10 +26,18 @@ EXCERPT:
 \"\"\"{excerpt}\"\"\"
 
 Rules:
+- The question and all answer options must be grammatically correct, well-formed English.
 - Base the question ONLY on the excerpt.
 - Options must be short and plausible; exactly 4 options labeled A) B) C) D).
 - Exactly ONE correct answer; respond with letter only in "correct".
-- "why" must be <= 140 chars and cite wording from the excerpt when possible.
+- "why" must be a complete sentence, max 140 characters, grounded in the excerpt.
+- You are part of a set of questions where approximately {application_share}% should involve applying the concept, not just recalling facts.
+
+Difficulty Settings (use these to guide tone and depth):
+- Context span: {context_span}
+- Distractor strength: {distractor_strength}
+- Application share: {application_share}
+
 
 Return JSON:
 {{
@@ -53,9 +61,16 @@ EXCERPT:
 \"\"\"{excerpt}\"\"\"
 
 Rules:
+- The question and all answer options must be grammatically correct, well-formed English.
 - Statement must be verifiably True or False from the excerpt only.
 - options must be exactly ["Yes","No"].
-- "why" must be <= 140 chars and cite wording from the excerpt when possible.
+- "why" must be a complete sentence, max 140 characters, grounded in the excerpt.
+- You are part of a set of questions where approximately {application_share}% should involve applying the concept, not just recalling facts.
+
+Difficulty Settings (use these to guide tone and depth):
+- Context span: {context_span}
+- Distractor strength: {distractor_strength}
+- Application share: {application_share}
 
 Return JSON:
 {{

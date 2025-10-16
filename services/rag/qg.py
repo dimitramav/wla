@@ -30,19 +30,6 @@ def _trim(text: str, n: int) -> str:
         return text
     return text[:n].rsplit(" ", 1)[0] + "…"
 
-def _make_sentence(s: str, fallback: str = "Grounded in the excerpt.") -> str:
-    """
-    Ensure 'why' is a short, well-formed sentence.
-    """
-    s = (s or "").strip()
-    if not s:
-        s = fallback
-    s = s[:140].strip()
-    if s and s[0].isalpha():
-        s = s[0].upper() + s[1:]
-    if not s.endswith((".", "!", "?")):
-        s += "."
-    return s
 
 def _pick_plan_by_keywords(
     pool: List[Tuple[str, Dict]],
@@ -82,8 +69,10 @@ def _pick_plan_by_keywords(
 
     return plan[:needed]
 
-def _gen_one_mcq(excerpt: str, seed: int, keyword: Optional[str]) -> Dict:
-    user = USER_QG_MC_TEMPLATE.format(excerpt=excerpt)
+def _gen_one_mcq(excerpt: str, seed: int, keyword: Optional[str], dp:Optional[Dict] = None) -> Dict:
+    user = USER_QG_MC_TEMPLATE.format(excerpt=excerpt, context_span=dp.get("context_span", 1),
+        distractor_strength=dp.get("distractor_strength", 1),
+        application_share=int(dp.get("application_share", 0.0) * 100))
     if keyword:
         user += f"\n\nFocus on concept: {keyword}"
     out = generate_json(SYSTEM_QG, user, seed=seed, temperature=0.0)
@@ -105,11 +94,12 @@ def _gen_one_mcq(excerpt: str, seed: int, keyword: Optional[str]) -> Dict:
     corr = str(out["correct"]).strip().upper().replace(")", "")
     out["correct"] = corr if corr in {"A", "B", "C", "D"} else "B"
 
-    out["why"] = _make_sentence(out.get("why", ""))
     return out
 
-def _gen_one_yn(excerpt: str, seed: int, keyword: Optional[str]) -> Dict:
-    user = USER_QG_YN_TEMPLATE.format(excerpt=excerpt)
+def _gen_one_yn(excerpt: str, seed: int, keyword: Optional[str], dp: Optional[Dict] = None) -> Dict:
+    user = USER_QG_YN_TEMPLATE.format(excerpt=excerpt, context_span=dp.get("context_span", 1),
+        distractor_strength=dp.get("distractor_strength", 1),
+        application_share=int(dp.get("application_share", 0.0) * 100))
     if keyword:
         user += f"\n\nFocus on concept: {keyword}"
     out = generate_json(SYSTEM_QG, user, seed=seed, temperature=0.0)
@@ -126,10 +116,9 @@ def _gen_one_yn(excerpt: str, seed: int, keyword: Optional[str]) -> Dict:
     corr = str(out["correct"]).strip().lower()
     out["correct"] = "Yes" if corr.startswith("y") else "No"
 
-    out["why"] = _make_sentence(out.get("why", ""))
     return out
 
-def generate_qg(topic: str, docset_hash: str, mix: Dict, seed: int, keywords: List[str]) -> Dict:
+def generate_qg(topic: str, docset_hash: str, mix: Dict, seed: int, keywords: List[str], difficulty_profile: Dict = {}) -> Dict:
     """
     Returns:
       {
@@ -157,7 +146,7 @@ def generate_qg(topic: str, docset_hash: str, mix: Dict, seed: int, keywords: Li
         # If no match, round-robin assign a keyword so we don't always use the first one.
         assigned_kw = matched_kw or (keywords[i % len(keywords)] if keywords else None)
 
-        q = _gen_one_mcq(excerpt, seed=+ i, keyword=assigned_kw)
+        q = _gen_one_mcq(excerpt, seed=+ i, keyword=assigned_kw, dp=difficulty_profile)
         qid = f"q-{topic}-{docset_hash[:6]}-mcq-{i+1}"
         questions.append({
             "id": qid,
@@ -183,7 +172,7 @@ def generate_qg(topic: str, docset_hash: str, mix: Dict, seed: int, keywords: Li
 
         assigned_kw = matched_kw or (keywords[(start + j) % len(keywords)] if keywords else None)
 
-        q = _gen_one_yn(excerpt, seed= 100 + j, keyword=assigned_kw)
+        q = _gen_one_yn(excerpt, seed= 100 + j, keyword=assigned_kw, dp=difficulty_profile)
         qid = f"q-{topic}-{docset_hash[:6]}-yn-{j+1}"
         questions.append({
             "id": qid,
