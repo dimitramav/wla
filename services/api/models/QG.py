@@ -13,7 +13,6 @@ class WeakK(BaseModel):
 
 class QGRequest(BaseModel):
     hash: str
-    level: int
     keywords: List[str] = Field(default_factory=list)
     mix: dict
     seed: str

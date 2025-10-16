@@ -32,16 +32,15 @@ router.post("/:topic/quiz/start", async (req, res) => {
         // — call FastAPI /qg —
         const payload = {
             hash: docsetHash,
-            level: lvl,
             keywords: baseKeywords,
             mix: cfg.mix,
             seed: "default-seed",                     // swap to user's seed later if you wish
             difficulty_profile: cfg.difficulty_profile,
             weak_keywords: [],                        // add from Progress later (Day 10)
         };
-        const data = await qg(payload);
+        const data = await qg(payload, topic);
         const qs = data?.questions || [];
-        if (!Array.isArray(qs) || qs.length !== 15) {
+        if (!Array.isArray(qs) || qs.length !== 10) {
             return res.status(502).json({ error: { message: "QG invalid response" } });
         }
         const quiz = await QuizDB.createStarted({
