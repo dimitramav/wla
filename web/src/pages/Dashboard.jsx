@@ -6,9 +6,14 @@ import Navbar from '../components/layout/Navbar';
 import Footer from "../components/layout/Footer";
 import Progress from '../components/viewers/Progress';
 import Quiz from '../components/quiz/Quiz';
+import { useTopic } from '../hooks/useTopic';
+import { useAuth } from "../context/AuthContext";
 import { useState } from 'react';
 
 const Dashboard = () => {
+    const PASS_THRESHOLD = import.meta.env.PASS_THRESHOLD;
+    const { topic, docsetHash } = useTopic();
+    const { user } = useAuth();
     const [selectedUrl, setSelectedUrl] = useState(undefined);
     const [activeDrawer, setActiveDrawer] = useState(null); // 'progress' | 'quiz' | null
 
@@ -23,8 +28,8 @@ const Dashboard = () => {
                     <div className='tutors-panel'>
                         <TheoryPanel onShow={handleShow}
                         />
-                        {activeDrawer === 'progress' && <div className='drawer-panel'><Progress /></div>}
-                        {activeDrawer === 'quiz' && <div className='drawer-panel'><Quiz /></div>}
+                        {activeDrawer === 'progress' && <div className='drawer-panel'><Progress topic={topic} userId={user?.id} PASS_THRESHOLD={PASS_THRESHOLD} /></div>}
+                        {activeDrawer === 'quiz' && <div className='drawer-panel'><Quiz topic={topic} docsetHash={docsetHash} userId={user?.id} PASS_THRESHOLD={PASS_THRESHOLD} onShowProgress={() => setActiveDrawer("progress")} /></div>}
                     </div>
                     <div className="documents-panel">
                         <div className="documents-grid">

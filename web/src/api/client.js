@@ -16,6 +16,5 @@ export async function apiPost(path, body) {
         const msg = await res.text().catch(() => '');
         throw new Error(`POST ${path} failed: ${res.status} ${msg}`);
     }
-
     return res.json();
 }

@@ -1,1 +1,191 @@
-  .progress-panel {}
+  .progress-panel {
+      overflow: hidden;
+      height: inherit;
+      display: flex;
+      flex-direction: column;
+      max-height: 100%;
+      gap: 10px;
+
+      .fail {
+          color: $error;
+      }
+
+      .success {
+          color: $success;
+      }
+
+      .progress-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+          gap: 1rem;
+          overflow-y: auto;
+          max-height: inherit;
+
+
+      }
+
+      .progress-card {
+          border: 1px solid $border-color;
+          border-radius: 12px;
+          padding: 1rem;
+
+
+          .progress-card-header {
+              display: flex;
+              align-items: center;
+              gap: 10px;
+              margin-bottom: 0.5rem;
+
+
+
+              .progress-card-icon {
+                  width: 36px;
+                  height: 36px;
+                  border-radius: 8px;
+                  display: grid;
+                  place-items: center;
+                  font-size: 1.1rem;
+
+                  &.unlocked {
+                      background: $primary-light;
+                      color: $primary-dark;
+                  }
+
+                  &.locked {
+                      background: $gray-100;
+                      color: $gray-400;
+                  }
+              }
+
+
+              .progress-card-meta {
+                  .label {
+                      font-size: 14px;
+                      color: $text-primary;
+                  }
+
+                  .value {
+                      font-size: 18px;
+                      font-weight: 700;
+                      color: $text-primary;
+                  }
+              }
+
+              .progress-card-stats {
+                  margin-left: auto;
+                  text-align: right;
+                  font-size: 14px;
+                  color: $text-primary;
+
+
+              }
+          }
+
+
+
+          .level-card-body {
+              display: grid;
+              grid-template-columns: 160px 1fr;
+              gap: 1rem;
+
+              @media (max-width: 480px) {
+                  grid-template-columns: 1fr;
+              }
+
+
+              .level-card-chart {
+                  height: 140px;
+              }
+
+              .stat-box {
+                  border: 1px solid$border-color;
+                  border-radius: 10px;
+                  padding: 0.75rem;
+                  display: grid;
+                  gap: 6px;
+                  background: $bg-body;
+
+
+                  .stat-box-row {
+                      display: flex;
+                      justify-content: space-between;
+                      color: $text-primary;
+
+                      strong {
+                          color: $text-primary;
+                      }
+                  }
+
+                  .stat-box-hint {
+                      font-size: 12px;
+                      color: $text-secondary;
+                  }
+              }
+          }
+      }
+
+
+
+      .keywords {
+          margin-top: 14px;
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+
+          h3 {
+              margin: 2px;
+              ;
+              ;
+          }
+
+          .empty {
+              color: $text-muted
+          }
+
+          .keyword-row {
+              display: flex;
+              justify-content: space-between;
+              font-size: 14px;
+              margin-bottom: 4px;
+
+              .keyword-meta {
+                  color: $text-secondary;
+                  display: flex;
+                  justify-content: center;
+                  align-items: center;
+                  gap: 10px;
+              }
+          }
+
+          .keyword-track {
+              width: 100%;
+              height: 8px;
+              background: $gray-100;
+              border-radius: 999px;
+              overflow: hidden;
+          }
+
+          .keyword-bar {
+              height: 8px;
+              border-radius: 999px;
+              transition: width 0.3s ease;
+
+              &--g80 {
+                  background: $success;
+              }
+
+              &--g60 {
+                  background: $secondary;
+              }
+
+              &--g40 {
+                  background: $warning;
+              }
+
+              &--g00 {
+                  background: $error;
+              }
+          }
+      }
+
+  }

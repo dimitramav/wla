@@ -1,16 +1,13 @@
 import { useState } from 'react';
 import { useQuiz } from '../../hooks/useQuiz';
-import { useTopic } from '../../hooks/useTopic';
-import { useAuth } from "../../context/AuthContext";
+
 import Loader from '../layout/widgets/Loader';
-import QuizHeader from './QuizHeader';
+import Header from '../layout/Header';
 import QuizQuestion from './QuizQuestion';
 import QuizScore from './QuizScore';
+import { submitQuiz } from '../../api/quiz';
+const Quiz = ({ topic, docsetHash, userId, PASS_THRESHOLD, onShowProgress }) => {
 
-const Quiz = () => {
-    const { topic, docsetHash } = useTopic();
-
-    const { user } = useAuth();
     const {
         level,
         loading,
@@ -23,23 +20,22 @@ const Quiz = () => {
         handleLevelChange,
         handleAnswer,
         setCurrentIndex,
-    } = useQuiz(topic, docsetHash, user?.id);
+    } = useQuiz(topic, docsetHash, userId);
     const [submitted, setSubmitted] = useState(false);
     if (error) return <div className="error">{error}</div>;
     if (loading) return <Loader message="Preparing questions..." />;
     if (questions.length === 0) return <Loader message="No questions available..." />;
     return (
         <div className="quiz-panel">
-            <QuizHeader level={level} onLevelChange={handleLevelChange} selectLevel={submitted === false} />
+            <Header panel="quiz" title="Quiz" topic={topic} level={level} onLevelChange={handleLevelChange} selectLevel={submitted === false} />
 
             {submitted ? (
                 <QuizScore
                     questions={questions}
                     answers={answers}
                     level={level}
-                    onShowProgress={() => alert("Show progress not implemented")}
-                    onNextLevel={() => handleLevelChange(level + 1)}
-                    onRetake={() => handleLevelChange(level)}
+                    onShowProgress={onShowProgress}
+                    onNewQuiz={(quizLevel) => { setSubmitted(false); handleLevelChange(quizLevel); }}
                 />
             ) : (
                 <>
@@ -74,18 +70,41 @@ const Quiz = () => {
                             <button
                                 className="btn btn-accent"
                                 disabled={!allAnswered || loading}
-                                onClick={() => {
-                                    console.log("Submit payload:", { quizId, topic, level, answers });
-                                    setSubmitted(true);
+                                onClick={async () => {
+                                    const correctCount = questions.reduce((acc, q) => {
+                                        return acc + (answers[q.id] === q.correct ? 1 : 0);
+                                    }, 0);
+                                    const passed = correctCount >= PASS_THRESHOLD;
+                                    try {
+                                        const success = await submitQuiz(
+                                            topic,
+                                            quizId,
+                                            correctCount,
+                                            passed,
+                                            userId,
+                                            answers
+                                        );
+
+                                        if (success) {
+                                            setSubmitted(true);
+                                        } else {
+                                            alert("Submission failed. Try again.");
+                                        }
+                                    } catch (err) {
+                                        console.error("Submission error:", err);
+                                        alert("Failed to submit quiz.");
+                                    }
                                 }}
+
                             >
                                 Submit
                             </button>
                         )}
                     </div>
                 </>
-            )}
-        </div>
+            )
+            }
+        </div >
 
     );
 };

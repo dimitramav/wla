@@ -10,6 +10,7 @@ export default defineConfig({
   plugins: [react()],
   define: {
     'import.meta.env.VITE_API_BASE': JSON.stringify(process.env.VITE_API_BASE || 'http://localhost:3001'),
+    'import.meta.env.PASS_THRESHOLD': parseInt(process.env.PASS_THRESHOLD || 12),
   },
   server: {
     proxy: {

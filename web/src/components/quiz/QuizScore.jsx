@@ -1,7 +1,8 @@
 
 import { FaCheckCircle, FaTimesCircle } from "react-icons/fa";
+const PASS_THRESHOLD = import.meta.env.PASS_THRESHOLD;
 
-const QuizScore = ({ questions, answers, level, onRetake, onNextLevel, onShowProgress, keywords }) => {
+const QuizScore = ({ questions, answers, level, onNewQuiz, onShowProgress, keywords }) => {
     const results = questions.map(q => {
         const userAnswer = answers[q.id];
         const isCorrect = userAnswer === q.correct;
@@ -12,7 +13,8 @@ const QuizScore = ({ questions, answers, level, onRetake, onNextLevel, onShowPro
         };
     });
     const correctCount = results.filter(r => r.isCorrect).length;
-    const passed = correctCount >= 12;
+    const passed = correctCount >= PASS_THRESHOLD;
+    console.log("PASS_THRESHOLD", PASS_THRESHOLD, typeof PASS_THRESHOLD);
 
     return (
         <div className="quiz-score">
@@ -56,9 +58,9 @@ const QuizScore = ({ questions, answers, level, onRetake, onNextLevel, onShowPro
             <div className="quiz-score-actions">
                 <button className="btn btn-outline-accent" onClick={onShowProgress}>Show Progress</button>
                 {passed && level < 3 ? (
-                    <button className="btn btn-accent" onClick={onNextLevel}>{`Start Level ${level + 1}`} </button>
+                    <button className="btn btn-accent" onClick={() => onNewQuiz(level + 1)}>{`Start Level ${level + 1}`} </button>
                 ) : (
-                    <button className="btn btn-accent" onClick={onRetake}>{`Repeat Level ${level}`}</button>
+                    <button className="btn btn-accent" onClick={() => onNewQuiz(level)}>{`Repeat Level ${level}`}</button>
                 )}
             </div>
         </div>
