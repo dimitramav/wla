@@ -166,11 +166,15 @@ def generate_qg(
     topic: str,
     docset_hash: str,
     mix: Dict,
-    seed: int,
+    seed: str,  # Changed type hint to str
     keywords: List[str],
     difficulty_profile: Dict = {}
 ) -> Dict:
     """Generate questions for a topic"""
+    print(f"Generating QG for topic={topic} hash={docset_hash} with keywords={keywords} and mix={mix}")
+    # Convert seed string to integer using hash
+    seed_int = hash(seed)
+    
     col = collection_for(topic)
     pool = _ordered_chunks(col, topic, docset_hash)
     if not pool:
@@ -189,7 +193,7 @@ def generate_qg(
         excerpt = _trim(text)
         assigned_kw = matched_kw or (keywords[i % len(keywords)] if keywords else None)
         
-        q = _generate_question(excerpt,  i, assigned_kw, MCQ_TEMPLATE, difficulty_profile)
+        q = _generate_question(excerpt, seed_int + i, assigned_kw, MCQ_TEMPLATE, difficulty_profile)
         qid = f"q-{topic}-{docset_hash[:6]}-mcq-{i+1}"
         questions.append(_create_question_object(q, qid, assigned_kw, meta))
 
@@ -199,7 +203,7 @@ def generate_qg(
         excerpt = _trim(text)
         assigned_kw = matched_kw or (keywords[(mcq_n + j) % len(keywords)] if keywords else None)
         
-        q = _generate_question(excerpt,  100 + j, assigned_kw, YN_TEMPLATE, difficulty_profile)
+        q = _generate_question(excerpt, seed_int + 100 + j, assigned_kw, YN_TEMPLATE, difficulty_profile)
         qid = f"q-{topic}-{docset_hash[:6]}-yn-{j+1}"
         questions.append(_create_question_object(q, qid, assigned_kw, meta))
 
