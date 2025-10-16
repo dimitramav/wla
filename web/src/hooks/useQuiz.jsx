@@ -17,7 +17,7 @@ export const useQuiz = (topic, docsetHash, userId) => {
         setQuestions([]);
         setQuizId(null);
         setCurrentIndex(0);
-
+        console.log(quizId);
         try {
             const data = await startQuiz(topic, targetLevel, userId, docsetHash);
             setQuizId(data.quizId || null);

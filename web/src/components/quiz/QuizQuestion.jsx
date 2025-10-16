@@ -1,6 +1,5 @@
 const QuizQuestion = ({ question, index, answer, onAnswer }) => {
     const { id, text, kind, options, keywords } = question;
-
     return (
         <div className="q-card">
             <div className="q-top">

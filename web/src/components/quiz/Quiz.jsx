@@ -21,6 +21,7 @@ const Quiz = ({ topic, docsetHash, userId, PASS_THRESHOLD, onShowProgress }) => 
         handleAnswer,
         setCurrentIndex,
     } = useQuiz(topic, docsetHash, userId);
+    console.log(quizId);
     const [submitted, setSubmitted] = useState(false);
     if (error) return <div className="error">{error}</div>;
     if (loading) return <Loader message="Preparing questions..." />;
