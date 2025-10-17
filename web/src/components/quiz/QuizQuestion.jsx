@@ -1,6 +1,5 @@
 const QuizQuestion = ({ question, index, answer, onAnswer }) => {
     const { id, text, kind, options, keywords } = question;
-
     return (
         <div className="q-card">
             <div className="q-top">
@@ -33,7 +32,7 @@ const QuizQuestion = ({ question, index, answer, onAnswer }) => {
                                 checked={answer === opt}
                                 onChange={() => onAnswer(id, opt)}
                             />
-                            {opt}
+                            {opt === "Yes" ? "True" : "False"}
                         </label>
                     ))
                 )}

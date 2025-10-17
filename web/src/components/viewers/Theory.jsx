@@ -1,6 +1,6 @@
 import { useTopic } from '../../hooks/useTopic';
 
-const Theory = ({ onShow }) => {
+const Theory = ({ onShow, activeDrawer }) => {
     const { topic, bullets, loading, error } = useTopic();
 
     return (
@@ -48,10 +48,10 @@ const Theory = ({ onShow }) => {
             )}
 
             <div className="panel-buttons">
-                <button className="btn btn-outline-primary" onClick={onShow.bind(this, 'progress')}><p>
+                <button className="btn btn-outline-primary" disabled={activeDrawer === 'quiz'} onClick={onShow.bind(this, 'progress')}><p>
                     Show Progress</p>
                 </button>
-                <button className="btn btn-outline-primary" onClick={onShow.bind(this, 'quiz')}><p>
+                <button className="btn btn-outline-primary" disabled={activeDrawer === 'quiz'} onClick={onShow.bind(this, 'quiz')}><p>
                     Start Quiz</p>
                 </button>
             </div>

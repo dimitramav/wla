@@ -32,7 +32,7 @@ def build_stable_context(col, topic: str, docset_hash: str) -> str:
 def summarize_topic(topic: str, docset_hash: str, seed: int = 7) -> Dict:
     from llm.prompts import SYSTEM_SUMMARY, USER_TEMPLATE
     from llm.client import generate_bullets, prompt_hash
-    col = collection_for(f"topic__{topic}")  # same naming as ingest
+    col = collection_for(f"{topic}")  # same naming as ingest
     ctx = build_stable_context(col, topic, docset_hash)
     user = USER_TEMPLATE.format(topic=topic, docset_hash=docset_hash) + "\n\n" + ctx
     print(user)

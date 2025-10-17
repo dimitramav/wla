@@ -10,7 +10,11 @@ const Sidebar = () => {
 
     return (
         <div className='sidebar'>
-            <img src={logo} alt="Logo" />
+            <img
+                src={logo}
+                alt="Logo"
+                onClick={() => window.location.reload()}
+            />
             <ul className="sidebar-list">
                 {items.map((item, index) => (
                     <li

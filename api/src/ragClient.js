@@ -22,8 +22,12 @@ export async function getSummaryFromRag({ topic, hash }) {
 }
 
 // --- Post question generation payload to FastAPI ---
-export async function qg(payload) {
-    const res = await fetch(`${RAG_BASE}/qg`, {
+export async function qg(payload, topic) {
+    const url = new URL("/qg", RAG_BASE);
+    url.searchParams.set("topic", topic);
+    console.log("Posting QG to FastAPI:", url.toString());
+    console.log("FWEFWEFWEFWEFWEFWEF" + JSON.stringify(payload) + "FWEFWEFWEFWEFWEFWEF");
+    const res = await fetch(url.toString(), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),

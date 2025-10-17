@@ -8,6 +8,10 @@
         object-fit: contain;
         display: block;
         margin-bottom: 50px;
+
+        &:hover {
+            cursor: pointer;
+        }
     }
 
     .sidebar-list {

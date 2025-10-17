@@ -26,7 +26,7 @@ const Dashboard = () => {
                 <Navbar />
                 <div className="content-grid">
                     <div className='tutors-panel'>
-                        <TheoryPanel onShow={handleShow}
+                        <TheoryPanel onShow={handleShow} activeDrawer={activeDrawer}
                         />
                         {activeDrawer === 'progress' && <div className='drawer-panel'><Progress topic={topic} userId={user?.id} PASS_THRESHOLD={PASS_THRESHOLD} /></div>}
                         {activeDrawer === 'quiz' && <div className='drawer-panel'><Quiz topic={topic} docsetHash={docsetHash} userId={user?.id} PASS_THRESHOLD={PASS_THRESHOLD} onShowProgress={() => setActiveDrawer("progress")} /></div>}

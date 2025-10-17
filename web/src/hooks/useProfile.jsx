@@ -13,7 +13,6 @@ export const useProfile = (topic, userId) => {
             setError(null);
             try {
                 const data = await getProfile(topic, userId);
-                console.log(data);
                 setUnlockedLevel(data.unlockedLevel || 1);
                 setPerLevel(Array.isArray(data.perLevel) ? data.perLevel : []);
             } catch (err) {
