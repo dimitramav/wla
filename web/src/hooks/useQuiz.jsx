@@ -40,6 +40,7 @@ export const useQuiz = (topic, docsetHash, userId) => {
         }
     }, [docsetHash, userId, level]);
 
+    // load quiz when: level changes, docsetHash or userId changes, repeat level requested
     const handleLevelChange = (newLevel) => {
         if (newLevel === level) {
             loadQuiz(newLevel);
