@@ -1,4 +1,3 @@
-// server/db/TopicDB.js
 import Topic from "../models/Topic.js";
 
 export class TopicDB {

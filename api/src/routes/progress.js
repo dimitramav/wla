@@ -1,20 +1,23 @@
-// api/src/routes/progress.js
+/**
+ *
+ * This file defines routes for managing and retrieving user progress data for specific topics.
+ *
+ * Exposes:
+ * - POST /api/topics/:topic/progress : Ensures a progress document exists for a user and retrieves their progress.
+ */
+
 import { Router } from "express";
 import mongoose from "mongoose";
 import { ProgressDB } from "../db/ProgressDB.js";
 
 const router = Router();
 
-/**
- * POST /api/topics/:slug/progress
- * Body: { userId: "<ObjectId>" }
- * Returns: { topic, userId, unlockedLevel, perLevel: [{level,attempts,passes,lastScore,lastAt}] }
- */
 router.post("/:topic/progress", async (req, res) => {
     try {
         const topic = req.params.topic;
         const { userId } = req.body || {};
 
+        // Validate userId
         if (!userId || !mongoose.Types.ObjectId.isValid(userId)) {
             return res.status(400).json({ error: { code: "bad_request", message: "Missing or invalid userId" } });
         }

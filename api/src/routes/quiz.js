@@ -1,4 +1,17 @@
-// api/src/routes/quiz.js
+/**
+ *
+ * This file defines routes for managing quizzes, including starting and submitting quizzes.
+ *
+ * Exposes:
+ * - POST /api/:topic/quiz/start : Starts a new quiz for a user based on the specified topic and level.
+ * - POST /api/:topic/quiz/submit : Submits quiz results, updates user progress, and tracks keyword statistics.
+ *
+ * Implementation notes:
+ * - Validates input parameters such as `uid`, `level`, and `docsetHash`.
+ * - Uses `qg` to generate quiz questions based on topic, level, and weak keywords.
+ * - Updates user progress and keyword statistics upon quiz submission.
+ */
+
 import { Router } from "express";
 import mongoose from "mongoose";
 import { qg } from "../ragClient.js";
@@ -13,7 +26,7 @@ router.post("/:topic/quiz/start", async (req, res) => {
     try {
         const { topic } = req.params;
         const { level = 1, uid, docsetHash, weakFocusRatio } = req.body;
-        // — basic input checks —
+        //  basic input checks 
         const lvl = Number(level);
         if (![1, 2, 3].includes(lvl)) {
             return res.status(400).json({ error: { message: "Invalid level" } });
@@ -24,22 +37,22 @@ router.post("/:topic/quiz/start", async (req, res) => {
         if (!docsetHash) {
             return res.status(400).json({ error: { message: "Missing or invalid docset" } });
         }
-        // — keywords + per-level config —
+        //  keywords + per-level config
         const baseKeywords = loadLevelKeywords(topic, lvl);
         if (!baseKeywords.length) {
             return res.status(400).json({ error: { message: "No keywords for level" } });
         }
         let weakKeywords = await computeWeakKeywords(uid, topic, lvl);
         const cfg = LEVELS[lvl];
-        // — call FastAPI /qg —
+        // call FastAPI /qg
         const payload = {
             hash: docsetHash,
             keywords: baseKeywords,
             mix: cfg.mix,
-            seed: "default-seed",                     // swap to user's seed later if you wish
+            seed: "default-seed",    // to be investigated 
             difficulty_profile: cfg.difficulty_profile,
             weak_keywords: weakKeywords,
-            weak_focus_ratio: weakFocusRatio || 0.4,  // default to 40% weak keyword focus
+            weak_focus_ratio: weakFocusRatio || 0.6,  // default to 60% weak keyword focus
         };
         const data = await qg(payload, topic);
         const qs = data?.questions || [];

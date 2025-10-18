@@ -1,16 +1,25 @@
-// server/routes/topics.js
+/**
+ *
+ * This file defines routes for managing topics and their summaries.
+ *
+ * Exposes:
+ * - GET /api/topics : Retrieves a list of all topics.
+ * - GET /api/topics/:slug/summary : Retrieves or generates a summary for a specific topic.
+ *
+ * Implementation notes:
+ * - Reads `rag/docsets.json` to determine the latest document set hash for a topic.
+ * - Caches summaries in `DocsetDB` to avoid redundant computations.
+ * - Calls FastAPI to generate summaries when not cached.
+ */
+
 import { Router } from "express";
 import { TopicDB } from "../db/TopicDB.js";
 import { DocsetDB } from "../db/DocsetDB.js";
 import { readRagDocsetsJson, getSummaryFromRag } from "../ragClient.js";
-import { hash } from "bcryptjs";
 
 const router = Router();
 
-/**
- * GET /api/topics
- * → { topics: [{ slug, title }] }
- */
+
 router.get("/", async (_req, res) => {
   try {
     const topics = await TopicDB.list();
@@ -21,13 +30,7 @@ router.get("/", async (_req, res) => {
   }
 });
 
-/**
- * GET /api/topics/:slug/summary
- * Source of truth for "live" = services/rag/docsets.json
- * - Read latestHash for topic
- * - If Mongo has {topic, latestHash} with bullets → return cached
- * - Else call FastAPI → save → return
- */
+
 router.get("/:slug/summary", async (req, res) => {
   const topic = req.params.slug;
 

@@ -1,13 +1,19 @@
+/**
+ * docs.js
+ *
+ * This file defines routes for serving PDFs for a given topic.
+ *
+ * Exposes:
+ * - GET /api/:topic/docs : Lists all PDF files in the `content/:topic` directory.
+ * * - Constructs URLs for each PDF file to be served via `/pdfs/:topic/:filename`.
+ * * - Returns an empty list if the topic directory does not exist.
+ */
+
 import { Router } from 'express';
 import path from 'path';
 import fs from 'fs';
 
 const router = Router();
-
-/**
- * GET /api/:topic/docs
- * Lists PDFs from content/:topic
- **/
 router.get('/:topic/docs', (req, res) => {
   const { topic } = req.params;
   const base = path.resolve(process.cwd(), '../content', topic);

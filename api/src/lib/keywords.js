@@ -19,13 +19,12 @@ export async function computeWeakKeywords(uid, topic, lvl) {
         if (lvlData && Array.isArray(lvlData.keywordStats)) {
             // sort by miss_rate descending, filter reasonable thresholds
             const sorted = [...lvlData.keywordStats]
-                .filter(k => k.attempts >= 3) // optional: ignore very low attempts
                 .sort((a, b) => b.miss_rate - a.miss_rate);
 
             // take top 3 weak keywords for now
             weakKeywords = sorted.length > 0
                 ? sorted.slice(0, 3).map(k => k.keyword)
-                : []; // or some default value like ['default1', 'default2', 'default3']
+                : [];
         }
     }
     return weakKeywords;
