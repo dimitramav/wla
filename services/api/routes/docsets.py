@@ -1,3 +1,8 @@
+# This file defines the API route for retrieving metadata about document sets (docsets) for a given topic.
+#
+# Exposes:
+# - GET /rag/docsets/{topic} : Retrieves metadata and chunk count for the specified topic.
+
 from fastapi import APIRouter, HTTPException
 from rag.vecstore import collection_for
 from rag.settings import read_docsets_meta
