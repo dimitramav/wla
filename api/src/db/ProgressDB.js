@@ -2,28 +2,13 @@ import mongoose from "mongoose";
 import Progress from "../models/Progress.js";
 
 export class ProgressDB {
-    /**
-     * Get a user's progress for a topic
-     * @param {String|ObjectId} userId 
-     * @param {String} topic 
-     * @returns Progress document or null
-     */
+    //Get a user's progress for a topic
     static async get(userId, topic) {
         if (!mongoose.Types.ObjectId.isValid(userId)) return null;
         return await Progress.findOne({ userId, topic });
     }
 
-    /**
-     * Create default progress document if one doesn't exist
-     * @param {String|ObjectId} userId 
-     * @param {String} topic 
-     * @returns New or existing Progress document
-     */
-    static async get(userId, topic) {
-        if (!mongoose.Types.ObjectId.isValid(userId)) return null;
-        return await Progress.findOne({ userId, topic }).lean();
-    }
-
+    //Create default progress document if one doesn't exist
     static async getOrCreate(userId, topic) {
         if (!mongoose.Types.ObjectId.isValid(userId)) return null;
 
@@ -44,10 +29,11 @@ export class ProgressDB {
         return prog;
     }
 
-    /**
-     * Save the given progress document
-     */
+
+    //Save the given progress document
     static async save(doc) {
         return await doc.save();
     }
-}
+
+
+}           

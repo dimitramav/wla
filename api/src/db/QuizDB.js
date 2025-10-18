@@ -2,9 +2,7 @@ import mongoose from "mongoose";
 import Quiz from "../models/Quiz.js";
 
 export class QuizDB {
-    /**
-     * Create a "started" quiz snapshot
-     */
+    //Create a quiz snapshot
     static async createStarted({ userId, topic, docsetHash, level, seed, questions }) {
         const quiz = await Quiz.create({
             userId: userId,
@@ -19,9 +17,7 @@ export class QuizDB {
         return quiz;
     }
 
-    /**
-     * Get quiz by id
-     */
+    //Get quiz by id
     static async getById(quizId) {
         if (!mongoose.Types.ObjectId.isValid(quizId)) return null;
         return await Quiz.findById(quizId).lean();

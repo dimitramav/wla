@@ -5,6 +5,16 @@
     align-items: center;
     flex-shrink: 0; // don't shrink
 
+    .title-section {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+
+        .subtitle {
+            margin: 0;
+            color: $text-muted;
+        }
+    }
 
     h2 {
         margin: 0;

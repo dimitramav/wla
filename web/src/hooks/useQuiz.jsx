@@ -9,6 +9,8 @@ export const useQuiz = (topic, docsetHash, userId) => {
     const [answers, setAnswers] = useState({});
     const [error, setError] = useState(null);
     const [currentIndex, setCurrentIndex] = useState(0);
+    const [weakKeywords, setWeakKeywords] = useState([]);
+    console.log(userId)
 
     const loadQuiz = async (targetLevel = level) => {
         setLoading(true);
@@ -17,9 +19,12 @@ export const useQuiz = (topic, docsetHash, userId) => {
         setQuestions([]);
         setQuizId(null);
         setCurrentIndex(0);
+        const weakFocusRatio = 0.65;
         try {
-            const data = await startQuiz(topic, targetLevel, userId, docsetHash);
+            const data = await startQuiz(topic, targetLevel, userId, docsetHash, weakFocusRatio);
+            console.log(data)
             setQuizId(data.quizId || null);
+            setWeakKeywords(data.weak_keywords || []);
             setQuestions(Array.isArray(data.questions) ? data.questions : []);
         } catch (e) {
             console.error("Error loading quiz:", e);
@@ -28,16 +33,20 @@ export const useQuiz = (topic, docsetHash, userId) => {
             setLoading(false);
         }
     };
-
     useEffect(() => {
+        console.log("useQuiz effect:", { docsetHash, userId, level, currentIndex });
         if (docsetHash && userId) {
             loadQuiz(level);
         }
     }, [docsetHash, userId, level]);
 
+    // load quiz when: level changes, docsetHash or userId changes, repeat level requested
     const handleLevelChange = (newLevel) => {
-        setLevel(newLevel);
-        setCurrentIndex(0);
+        if (newLevel === level) {
+            loadQuiz(newLevel);
+        } else {
+            setLevel(newLevel);
+        }
     };
 
     const handleAnswer = (qid, val) => {
@@ -56,6 +65,7 @@ export const useQuiz = (topic, docsetHash, userId) => {
         error,
         currentIndex,
         allAnswered,
+        weakKeywords,
         handleLevelChange,
         handleAnswer,
         setCurrentIndex

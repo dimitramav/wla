@@ -1,3 +1,15 @@
+/**
+ *
+ * This file initializes and configures the Express.js server for the API.
+ *
+ * Key Features:
+ * - Connects to MongoDB using `connectDB`.
+ * - Configures middleware for logging, JSON parsing, cookies, and CORS.
+ * - Serves static PDF files from the `content` directory.
+ * - Defines API routes for topics, documents, quizzes, profiles, and progress.
+ * - Includes a health check endpoint.
+ */
+
 import express from 'express';
 import cors from 'cors';
 import morgan from 'morgan';
@@ -29,13 +41,14 @@ connectDB()
 
 const app = express();
 
+
 const allowedOrigins = [
   'http://localhost:5173',
 ];
 
-app.use(morgan('dev'));
-app.use(express.json());
-app.use(cookieParser());
+app.use(morgan('dev')); //logs http requests
+app.use(express.json()); //parse incoming json
+app.use(cookieParser()); //enable cookies
 
 app.use(cors({
   origin(origin, callback) {
@@ -45,17 +58,15 @@ app.use(cors({
   credentials: true
 }));
 
-//serve static PDFs
+// Serve static PDFs from content directory
 const pdfsRoot = path.resolve(__dirname, '../../content');
 app.use('/pdfs', express.static(pdfsRoot, {
   setHeaders(res) { res.setHeader('Accept-Ranges', 'bytes'); }
 }));
 
-//auth
 app.use('/api/auth', authRouter);
 
-// API routes (leave open now; you can protect with authRequired later)
-// app.use('/api/topics', authRequired, topicsRouter);
+
 app.use('/api/topics', topicsRouter);
 app.use('/api', docsRouter);
 app.use("/api", quizRouter);
@@ -64,6 +75,7 @@ app.use("/api", progressRouter);
 
 app.get('/health', (_req, res) => res.json({ ok: true, service: 'express' }));
 
+// Start the server
 app.listen(PORT, () => {
   console.log(`API listening on http://localhost:${PORT}`);
   console.log(`Static PDFs served from ${pdfsRoot} at /pdfs`);
