@@ -1,16 +1,17 @@
 import { useProfile } from "../../hooks/useProfile";
 import { useAuth } from "../../context/AuthContext";
-const Header = ({ title, panel, topic, level = 1, onLevelChange = () => { }, selectLevel = false }) => {
+const Header = ({ title, panel, topic, level = 1, onLevelChange = () => { }, subtitle = "", selectLevel = false }) => {
     const { user } = useAuth();
     const { unlockedLevel } = useProfile(topic, user?.id);
-
     return (
         <div className="header">
-            <div className="title">
+            <div className="title-section">
                 <h2>{title}</h2>
+                {subtitle && <p className="subtitle"><b>Areas to strengthen:</b> {subtitle}</p>}
             </div>
             {panel === "quiz" ? (
                 selectLevel && (
+
                     <div className="quiz-controls">
                         <label htmlFor="quiz-level">Level:</label>
                         <select

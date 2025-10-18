@@ -1,14 +1,21 @@
 from typing import List, Dict, Tuple, Optional
 from .vecstore import collection_for
-from .settings import read_docsets_meta
 from llm.prompts import SYSTEM_QG, USER_QG_MC_TEMPLATE, USER_QG_YN_TEMPLATE
 from llm.client import generate_json, prompt_hash
 from dataclasses import dataclass
+from .settings import  EMB_MODEL_ID
+from chromadb.utils import embedding_functions
+import numpy as np
+import heapq
 
 # Configuration
 MAX_CHARS_PER_Q = 450
 POOL_TOP = 24
 MAX_RETRIES = 2
+
+emb_fn = embedding_functions.SentenceTransformerEmbeddingFunction(
+    model_name=EMB_MODEL_ID
+)
 
 @dataclass
 class QuestionTemplate:
@@ -63,36 +70,55 @@ def _trim(text: str, n: int = MAX_CHARS_PER_Q) -> str:
         return text
     return text[:n].rsplit(" ", 1)[0] + "…"
 
+def _cosine_similarity(a: np.ndarray, b: np.ndarray) -> float:
+    return np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b) + 1e-8)
+
 def _pick_plan_by_keywords(
     pool: List[Tuple[str, Dict]],
     keywords: List[str],
-    needed: int
+    needed: int,
 ) -> List[Tuple[str, Dict, Optional[str]]]:
-    """Select chunks based on keywords with backfill"""
-    kws = {k.strip().lower() for k in keywords or [] if k.strip()}
-    used = set()
+    """Select chunks most semantically similar to keywords using embedding similarity."""
+    if not keywords:
+        return [(txt, meta, None) for txt, meta in pool[:needed]]
+
+    # Step 1: Embed keywords
+    kw_vecs = [emb_fn(kw)[0] for kw in keywords]  # returns list of vectors
+
+    # Step 2: Embed chunks from the pool
+    chunk_texts = [txt for txt, _ in pool]
+    chunk_vecs = [emb_fn(txt)[0] for txt in chunk_texts]  # list of vectors
+
+    # Step 3: Compute similarity and build plan
+    heap = []  # Min-heap to keep top scoring (score, chunk_idx, keyword)
+
+    for kw_idx, kw_vec in enumerate(kw_vecs):
+        for chunk_idx, chunk_vec in enumerate(chunk_vecs):
+            score = _cosine_similarity(np.array(kw_vec), np.array(chunk_vec))
+            heapq.heappush(heap, (-score, chunk_idx, keywords[kw_idx]))  # negate for max-heap
+
+    # Step 4: De-duplicate and select top N
+    selected = set()
     plan = []
 
-    # Match keywords
-    if kws:
-        for idx, (txt, meta) in enumerate(pool):
-            if len(plan) >= needed:
-                break
-            low = txt.lower()
-            matched = next((k for k in kws if k in low), None)
-            if matched:
-                plan.append((txt, meta, matched))
-                used.add(idx)
+    while heap and len(plan) < needed:
+        _, chunk_idx, matched_kw = heapq.heappop(heap)
+        if chunk_idx in selected:
+            continue
+        selected.add(chunk_idx)
+        txt, meta = pool[chunk_idx]
+        plan.append((txt, meta, matched_kw))
 
-    # Backfill
-    for idx, (txt, meta) in enumerate(pool):
+    # Optional backfill if fewer than needed
+    for i, (txt, meta) in enumerate(pool):
         if len(plan) >= needed:
             break
-        if idx not in used:
+        if i not in selected:
             plan.append((txt, meta, None))
-            used.add(idx)
+            selected.add(i)
 
     return plan[:needed]
+
 
 def _generate_question(
     excerpt: str,
@@ -110,9 +136,10 @@ def _generate_question(
             application_share=int(dp.get("application_share", 0.0) * 100)
         )
         if keyword:
-            user += f"\n\nFocus on concept: {keyword}"
+            user += f"\n\nGenerate a question specifically about the concept '{keyword}' based solely on the excerpt above."
+
             
-        out = generate_json(SYSTEM_QG, user, seed=seed + attempt, temperature=0.0)
+        out = generate_json(SYSTEM_QG, user, seed=seed + attempt, temperature=0.3)
         
         if not isinstance(out, dict):
             continue
@@ -168,10 +195,12 @@ def generate_qg(
     mix: Dict,
     seed: str,  # Changed type hint to str
     keywords: List[str],
+    weak_keywords: Optional[List[str]],
+    weak_focus_ratio: float = 0.4,
     difficulty_profile: Dict = {}
 ) -> Dict:
     """Generate questions for a topic"""
-    print(f"Generating QG for topic={topic} hash={docset_hash} with keywords={keywords} and mix={mix}")
+    print(f"Generating QG for topic={topic} hash={docset_hash} with weak keywords={weak_keywords} and mix={mix}")
     # Convert seed string to integer using hash
     seed_int = hash(seed)
     
@@ -185,7 +214,18 @@ def generate_qg(
     questions = []
 
     # Generate all questions
-    plan = _pick_plan_by_keywords(pool, keywords, mcq_n + yn_n)
+    # Split questions between weak and normal keywords
+    total_questions = mcq_n + yn_n
+    weak_focus_questions = int(total_questions * weak_focus_ratio)
+    normal_questions = total_questions - weak_focus_questions
+    
+    # Get plans for both weak and strong keywords
+    weak_plan = _pick_plan_by_keywords(pool, weak_keywords or [], weak_focus_questions)
+    strong_keywords = list(set(keywords) - set(weak_keywords or []))
+    strong_plan = _pick_plan_by_keywords(pool, strong_keywords, normal_questions)
+
+    # Combine plans
+    plan = weak_plan + strong_plan
     
     # MCQs
     for i in range(min(mcq_n, len(plan))):

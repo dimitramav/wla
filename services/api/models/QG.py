@@ -7,17 +7,14 @@ class SourceSpan(BaseModel):
     page_to: int
     chunk_id: str
 
-class WeakK(BaseModel):
-    key: str
-    weight: float
-
 class QGRequest(BaseModel):
     hash: str
     keywords: List[str] = Field(default_factory=list)
     mix: dict
     seed: str
     difficulty_profile: dict
-    weak_keywords: Optional[List[WeakK]] = Field(default_factory=list)
+    weak_keywords: Optional[List[str]]
+    weak_focus_ratio: float = 0.4
 
 class Question(BaseModel):
     id: str

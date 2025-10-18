@@ -17,6 +17,8 @@ def qg(req: QGRequest, topic: str = Query(...)):
         mix=req.mix,
         seed=req.seed,            # string seed → converted inside generator
         keywords=req.keywords,
+        weak_keywords=req.weak_keywords,
+        weak_focus_ratio=req.weak_focus_ratio,
         difficulty_profile=req.difficulty_profile,
     )
     if not out["questions"]:

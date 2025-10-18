@@ -17,18 +17,20 @@ const Quiz = ({ topic, docsetHash, userId, PASS_THRESHOLD, onShowProgress }) => 
         error,
         currentIndex,
         allAnswered,
+        weakKeywords,
         handleLevelChange,
         handleAnswer,
         setCurrentIndex,
+
     } = useQuiz(topic, docsetHash, userId);
     const [submitted, setSubmitted] = useState(false);
-    console.log(questions)
+    console.log(weakKeywords)
     if (error) return <div className="error">{error}</div>;
     if (loading) return <Loader message="Preparing questions..." />;
     if (questions.length === 0) return <Loader message="No questions available..." />;
     return (
         <div className="quiz-panel">
-            <Header panel="quiz" title="Quiz" topic={topic} level={level} onLevelChange={handleLevelChange} selectLevel={submitted === false} />
+            <Header panel="quiz" title="Quiz" topic={topic} level={level} onLevelChange={handleLevelChange} selectLevel={submitted === false} subtitle={weakKeywords.join(", ")} />
 
             {submitted ? (
                 <QuizScore

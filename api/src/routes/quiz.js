@@ -6,12 +6,13 @@ import { LEVELS } from "../lib/levels.js";
 import { loadLevelKeywords } from "../lib/keywords.js";
 import { QuizDB } from "../db/QuizDB.js";
 import { ProgressDB } from "../db/ProgressDB.js";
+import { computeWeakKeywords } from "../lib/keywords.js";
 const router = Router({ mergeParams: true });
 
 router.post("/:topic/quiz/start", async (req, res) => {
     try {
         const { topic } = req.params;
-        const { level = 1, uid, docsetHash } = req.body;
+        const { level = 1, uid, docsetHash, weakFocusRatio } = req.body;
         // — basic input checks —
         const lvl = Number(level);
         if (![1, 2, 3].includes(lvl)) {
@@ -28,6 +29,7 @@ router.post("/:topic/quiz/start", async (req, res) => {
         if (!baseKeywords.length) {
             return res.status(400).json({ error: { message: "No keywords for level" } });
         }
+        let weakKeywords = await computeWeakKeywords(uid, topic, lvl);
         const cfg = LEVELS[lvl];
         // — call FastAPI /qg —
         const payload = {
@@ -36,10 +38,12 @@ router.post("/:topic/quiz/start", async (req, res) => {
             mix: cfg.mix,
             seed: "default-seed",                     // swap to user's seed later if you wish
             difficulty_profile: cfg.difficulty_profile,
-            weak_keywords: [],                        // add from Progress later (Day 10)
+            weak_keywords: weakKeywords,
+            weak_focus_ratio: weakFocusRatio || 0.4,  // default to 40% weak keyword focus
         };
         const data = await qg(payload, topic);
         const qs = data?.questions || [];
+        console.log("QG returned questions:", qs);
         if (!Array.isArray(qs) || qs.length !== 10) {
             return res.status(502).json({ error: { message: "QG invalid response" } });
         }
@@ -51,11 +55,11 @@ router.post("/:topic/quiz/start", async (req, res) => {
             seed: "default-seed",
             questions: qs,
         });
-
         return res.json({
             quizId: String(quiz._id),
             level: lvl,
             questions: qs, // includes 'correct'
+            weak_keywords: weakKeywords,
         });
     } catch (e) {
         console.error(e);
