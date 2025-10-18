@@ -1,3 +1,14 @@
+# This file provides utilities for filtering and extracting relevant sections from research PDFs.
+#
+# Key Features:
+# - Identifies and trims front matter and tail sections of research papers.
+# - Uses heuristics to detect introduction and reference sections.
+# - Extracts and processes text from PDF files.
+#
+# Dependencies:
+# - PyPDF for reading and extracting text from PDFs.
+# - Regular expressions for pattern matching.
+
 # Simple research-article filter: trims front matter and tail sections.
 # Works for most papers; later upgrade to GROBID/Docling for robust sectionization.
 import re
@@ -25,6 +36,8 @@ FRONT_TOKENS = [
     "creativecommons", "received", "accepted", "published", "rights reserved"
 ]
 
+# Read all pages from a PDF file
+
 def _read_pdf_pages(path: Path) -> List[str]:
     reader = PdfReader(str(path))
     out = []
@@ -36,11 +49,13 @@ def _read_pdf_pages(path: Path) -> List[str]:
         out.append(txt.strip())
     return out
 
+# Check if text resembles front matter based on heuristics
 def _looks_like_front_matter(text: str) -> bool:
     low = text.lower()
     hits = sum(tok in low for tok in FRONT_TOKENS)
     return hits >= 2 or len(text.split()) < 150
 
+# Find the index of a line matching any pattern
 def _find_index(lines: List[str], patterns: List[str]) -> Optional[int]:
     for i, ln in enumerate(lines):
         for pat in patterns:
@@ -48,6 +63,7 @@ def _find_index(lines: List[str], patterns: List[str]) -> Optional[int]:
                 return i
     return None
 
+# Filter and extract relevant sections from a research PDF
 def filter_research_pdf(path: Path) -> Dict[str, Any]:
     pages = _read_pdf_pages(path)
     if not pages:

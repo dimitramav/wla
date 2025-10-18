@@ -1,3 +1,11 @@
+
+# This file provides utilities for generating questions for a specific topic and document set.
+#
+# Key Features:
+# - Defines templates for multiple-choice and yes/no questions.
+# - Selects relevant text chunks based on keywords and embedding similarity.
+# - Generates questions using an LLM (Large Language Model).
+
 from typing import List, Dict, Tuple, Optional
 from .vecstore import collection_for
 from llm.prompts import SYSTEM_QG, USER_QG_MC_TEMPLATE, USER_QG_YN_TEMPLATE
@@ -17,6 +25,7 @@ emb_fn = embedding_functions.SentenceTransformerEmbeddingFunction(
     model_name=EMB_MODEL_ID
 )
 
+# QuestionTemplate class represents a question format.
 @dataclass
 class QuestionTemplate:
     kind: str
@@ -64,15 +73,26 @@ def _ordered_chunks(col, topic: str, docset_hash: str) -> List[Tuple[str, Dict]]
     ))
     return pairs[:POOL_TOP]
 
+# Trim text to a specified number of characters
 def _trim(text: str, n: int = MAX_CHARS_PER_Q) -> str:
     """Trim text to n characters at word boundary"""
     if len(text) <= n:
         return text
     return text[:n].rsplit(" ", 1)[0] + "…"
 
+# Compute cosine similarity between two vectors
 def _cosine_similarity(a: np.ndarray, b: np.ndarray) -> float:
     return np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b) + 1e-8)
 
+# Select chunks most similar to keywords
+#
+# Parameters:
+# - pool: A list of text and metadata tuples.
+# - keywords: A list of keywords to match.
+# - needed: The number of chunks to select.
+#
+# Returns:
+# - A list of tuples containing text, metadata, and matched keywords.
 def _pick_plan_by_keywords(
     pool: List[Tuple[str, Dict]],
     keywords: List[str],
@@ -119,7 +139,7 @@ def _pick_plan_by_keywords(
 
     return plan[:needed]
 
-
+# Generate a single question
 def _generate_question(
     excerpt: str,
     seed: int,
@@ -138,15 +158,14 @@ def _generate_question(
         if keyword:
             user += f"\n\nGenerate a question specifically about the concept '{keyword}' based solely on the excerpt above."
 
-            
         out = generate_json(SYSTEM_QG, user, seed=seed + attempt, temperature=0.3)
-        
+
         if not isinstance(out, dict):
             continue
-            
+
         text = out.get("text", "").strip()
         correct = str(out.get("correct", "")).strip().upper().replace(")", "")
-        
+
         if template.validate_response(text, correct):
             return {
                 "kind": template.kind,
@@ -189,6 +208,7 @@ def _create_question_object(
         }]
     }
 
+# Generate questions for a topic
 def generate_qg(
     topic: str,
     docset_hash: str,

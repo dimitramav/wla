@@ -1,3 +1,19 @@
+"""
+ * ingest.py
+ *
+ * This file defines the ingestion logic for processing and storing document data for a specific topic in the RAG (Retrieval-Augmented Generation) system.
+ *
+ * Key Features:
+ * - Collects and processes PDF files for a given topic.
+ * - Splits text into chunks and stores them in a vector store.
+ * - Computes and updates metadata for document sets.
+ *
+ * Dependencies:
+ * - ChromaDB for vector storage.
+ * - PDF filtering and text splitting utilities.
+ * - Metadata management utilities.
+"""
+
 import hashlib, time
 from typing import Dict, Any, List
 from fastapi import HTTPException
@@ -6,6 +22,30 @@ from .settings import (
 )
 from .pdf_filter import filter_research_pdf
 from .vecstore import make_splitter, collection_for
+
+# Ingest a topic into the vector store
+"""
+ * ingest_topic
+ *
+ * Processes and stores document data for a specific topic.
+ *
+ * Parameters:
+ * - topic: The name of the topic to ingest.
+ * - force: A boolean indicating whether to force re-ingestion (default: False).
+ *
+ * Returns:
+ * - A dictionary containing the ingestion status, document set hash, and metadata.
+ *
+ * Workflow:
+ * - Collects PDF files for the topic.
+ * - Computes a hash for the document set.
+ * - Resets the vector store collection if the document set has changed.
+ * - Splits text into chunks and stores them in the vector store.
+ * - Updates metadata for the document set.
+ *
+ * Raises:
+ * - HTTPException (404): If no PDFs are found for the topic.
+"""
 
 def ingest_topic(topic: str, force: bool = False) -> Dict[str, Any]:
     pdfs = collect_pdf_files(topic)
