@@ -216,7 +216,7 @@ def generate_qg(
     seed: str,  # Changed type hint to str
     keywords: List[str],
     weak_keywords: Optional[List[str]],
-    weak_focus_ratio: float = 0.4,
+    weak_focus_ratio: float = 0.65,
     difficulty_profile: Dict = {}
 ) -> Dict:
     """Generate questions for a topic"""
