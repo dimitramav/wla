@@ -135,7 +135,7 @@ const Progress = ({ topic, userId, PASS_THRESHOLD }) => {
                                         </div>
                                     ))}
                                     <div className="stat-box-hint">
-                                        (Pass threshold: {PASS_THRESHOLD}/15)
+                                        (Pass threshold: {PASS_THRESHOLD}/10)
                                     </div>
                                 </div>
                             </div>
