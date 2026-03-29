@@ -58,7 +58,7 @@ def _extract_first_json(text: str):
     # Try direct parse
     try:
         return json.loads(text)
-    except Exception:
+    except json.JSONDecodeError:
         pass
 
     # Fallback: find the first {...} or [...] block
@@ -68,9 +68,9 @@ def _extract_first_json(text: str):
             chunk = text[start:end]
             try:
                 return json.loads(chunk)
-            except Exception:
+            except json.JSONDecodeError:
                 continue
-    return {}
+    return None
 
 # Generate JSON from the LLM
 def generate_json(system: str, user: str, seed: int = 7, temperature: float = 0.0) -> dict:
@@ -88,5 +88,6 @@ def generate_json(system: str, user: str, seed: int = 7, temperature: float = 0.
     text = r.json()["choices"][0]["message"]["content"]
     parsed = _extract_first_json(text)
 
-    # Coerce to dict: return empty object if not dict (optional)
+    if parsed is None:
+        raise json.JSONDecodeError("LLM response could not be parsed as JSON", text, 0)
     return parsed if isinstance(parsed, dict) else {}

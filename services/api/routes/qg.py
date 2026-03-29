@@ -1,3 +1,4 @@
+import json
 from fastapi import APIRouter, HTTPException
 from ..models.QG import QGRequest, QGResponse, Question, SourceSpan
 from fastapi import  Query
@@ -11,18 +12,21 @@ def qg(req: QGRequest, topic: str = Query(...)):
      
 
     # For MVP we ignore weak_keywords and difficulty_profile here
-    out = generate_qg(
-        topic=topic,
-        docset_hash=req.hash,
-        mix=req.mix,
-        seed=req.seed,            # string seed → converted inside generator
-        keywords=req.keywords,
-        weak_keywords=req.weak_keywords,
-        weak_focus_ratio=req.weak_focus_ratio,
-        difficulty_profile=req.difficulty_profile,
-    )
+    try:
+        out = generate_qg(
+            topic=topic,
+            docset_hash=req.hash,
+            mix=req.mix,
+            seed=req.seed,            # string seed → converted inside generator
+            keywords=req.keywords,
+            weak_keywords=req.weak_keywords,
+            weak_focus_ratio=req.weak_focus_ratio,
+            difficulty_profile=req.difficulty_profile,
+        )
+    except json.JSONDecodeError:
+        raise HTTPException(status_code=500, detail="LLM generated malformed JSON.")
     if not out["questions"]:
-        raise HTTPException(409, "No chunks available for this hash. Did you ingest this topic?")
+        raise HTTPException(status_code=422, detail="Not enough sources found for that topic. Please broaden your scope or try another topic.")
     # Conform exactly to QGResponse
     return QGResponse(questions=[
         Question(
