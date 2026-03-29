@@ -6,6 +6,7 @@
 # - Selects relevant text chunks based on keywords and embedding similarity.
 # - Generates questions using an LLM (Large Language Model).
 
+import json
 from typing import List, Dict, Tuple, Optional
 from .vecstore import collection_for
 from llm.prompts import SYSTEM_QG, USER_QG_MC_TEMPLATE, USER_QG_YN_TEMPLATE
@@ -158,7 +159,10 @@ def _generate_question(
         if keyword:
             user += f"\n\nGenerate a question specifically about the concept '{keyword}' based solely on the excerpt above."
 
-        out = generate_json(SYSTEM_QG, user, seed=seed + attempt, temperature=0.3)
+        try:
+            out = generate_json(SYSTEM_QG, user, seed=seed + attempt, temperature=0.3)
+        except json.JSONDecodeError:
+            continue
 
         if not isinstance(out, dict):
             continue
