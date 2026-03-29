@@ -69,8 +69,14 @@ export async function qg(payload, topic) {
     });
 
     if (!res.ok) {
-        const text = await res.text();
-        throw new Error(`QG failed: ${res.status} ${text}`);
+        let detail = `QG failed: ${res.status}`;
+        try {
+            const body = await res.json();
+            if (body.detail) detail = body.detail;
+        } catch {
+            // keep default
+        }
+        throw new Error(detail);
     }
 
     return res.json();
