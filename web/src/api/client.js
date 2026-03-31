@@ -8,6 +8,7 @@ export async function apiGet(path) {
 export async function apiPost(path, body) {
     const res = await fetch(`${API_BASE}${path}`, {
         method: 'POST',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
     });
