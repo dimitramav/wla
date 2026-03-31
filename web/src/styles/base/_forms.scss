@@ -4,7 +4,7 @@
     width: 100%;
     padding: 0.625rem 0.75rem;
     border: 1px solid $border-color;
-    border-radius: 0.6rem;
+    border-radius: var(--border-radius);
     box-sizing: border-box;
 
     background-color: $bg-card;
@@ -227,7 +227,7 @@
 
     padding: 0.625rem 2rem 0.625rem 0.75rem;
     border: 1px solid $border-color;
-    border-radius: 0.6rem;
+    border-radius: var(--border-radius);
 
     background-color: $bg-card;
     color: $text-primary;
