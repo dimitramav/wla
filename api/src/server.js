@@ -28,17 +28,6 @@ import progressRouter from './routes/progress.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-connectDB()
-  .then(() => {
-    app.listen(PORT, () => {
-      console.log(` API listening on http://localhost:${PORT}`);
-    });
-  })
-  .catch(err => {
-    console.error('Failed to connect to MongoDB:', err);
-    process.exit(1); // Exit if DB connection fails
-  });
-
 const app = express();
 
 
@@ -75,8 +64,15 @@ app.use("/api", progressRouter);
 
 app.get('/health', (_req, res) => res.json({ ok: true, service: 'express' }));
 
-// Start the server
-app.listen(PORT, () => {
-  console.log(`API listening on http://localhost:${PORT}`);
-  console.log(`Static PDFs served from ${pdfsRoot} at /pdfs`);
-});
+// Connect to DB then start the server
+connectDB()
+  .then(() => {
+    app.listen(PORT, () => {
+      console.log(`API listening on http://localhost:${PORT}`);
+      console.log(`Static PDFs served from ${pdfsRoot} at /pdfs`);
+    });
+  })
+  .catch(err => {
+    console.error('Failed to connect to MongoDB:', err);
+    process.exit(1);
+  });
