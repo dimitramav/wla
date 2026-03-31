@@ -68,6 +68,5 @@ coverage/
 # Planning
 .planning/
 .claude/
-.implementation/
 GEMINI.md
 CLAUDE.md
