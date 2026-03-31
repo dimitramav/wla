@@ -14,6 +14,9 @@ const Auth = () => {
 
 
     const isSignIn = authMode === "signin";
+    const isValid = isSignIn
+        ? email.trim().length > 0 && password.trim().length > 0
+        : email.trim().length > 0 && password.trim().length > 0 && username.trim().length > 0;
 
     const toggleAuthMode = () => {
         setAuthMode(isSignIn ? "signup" : "signin");
@@ -108,7 +111,7 @@ const Auth = () => {
                     </span>
                 </div>
                 <div className="text-center">
-                    <button type="submit" className="btn btn-primary">
+                    <button type="submit" className="btn btn-primary" disabled={!isValid}>
                         Submit
                     </button>
                 </div>
