@@ -30,6 +30,14 @@ function ProtectedRoute({ children }) {
   return children;
 }
 
+// Redirect authenticated users away from /login to dashboard
+function AuthRedirect({ children }) {
+  const { user, loading } = useAuth();
+  if (loading) return null;
+  if (user) return <Navigate to="/" replace />;
+  return children;
+}
+
 export default function App() {
   return (
     <AuthProvider>
@@ -43,7 +51,14 @@ export default function App() {
               </ProtectedRoute>
             }
           />
-          <Route path="/login" element={<Auth />} />
+          <Route
+            path="/login"
+            element={
+              <AuthRedirect>
+                <Auth />
+              </AuthRedirect>
+            }
+          />
         </Routes>
       </BrowserRouter>
     </AuthProvider>
