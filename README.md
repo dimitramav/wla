@@ -35,23 +35,34 @@ cd api && npm install
 cd ../web && npm install
 ```
 
-### 4. Environment Configuration
-The `web/.env` file is gitignored and must be created manually:
+## Quick Start (Recommended)
+
+You can start all services at once using the provided scripts:
+
 ```bash
-echo "VITE_API_BASE=http://localhost:3001" > web/.env
+# Start all services (MongoDB, Express, FastAPI, Vite)
+./scripts/start.sh
+
+# Start services without the frontend
+./scripts/start.sh --no-frontend
+
+# Stop all services
+./scripts/stop.sh
 ```
 
-## Running the Application
+The `start.sh` script handles health checks and environment validation automatically. Logs for each service are piped to `/tmp/wla-express.log`, `/tmp/wla-fastapi.log`, and `/tmp/wla-vite.log`.
 
-Start each service in its own terminal in the following order:
+## Running the Application (Manual)
 
-1.  **MongoDB**: `sudo systemctl start mongod` (Ensure it's running: `sudo systemctl status mongod`)
-2.  **Ollama**: Ensure Ollama is running and the model `mistral:7b-instruct-q4_0` is pulled.
-3.  **Express API**: `cd api && npm run dev` (Listening on http://localhost:3001)
+If you prefer to start services individually in their own terminals:
+
+1.  **MongoDB**: `sudo systemctl start mongod`
+2.  **Ollama**: Ensure Ollama is running and `mistral:7b-instruct-q4_0` is pulled.
+3.  **Express API**: `cd api && npm run dev` (http://localhost:3001)
 4.  **FastAPI RAG Service**: 
-    -   Open `services/server.ipynb` and run all cells (Uvicorn running on http://localhost:8000)
-    -   *Note: On first run, you may need to run cells in `services/setup.ipynb` if not done via CLI.*
-5.  **React Web Frontend**: `cd web && npm run dev` (Access at http://localhost:5173)
+    -   `cd services && ../.venv/bin/python -m uvicorn api.main:app --factory --port 8000`
+    -   *Or run all cells in `services/server.ipynb`*
+5.  **React Web Frontend**: `cd web && npm run dev` (http://localhost:5173)
 
 ---
 

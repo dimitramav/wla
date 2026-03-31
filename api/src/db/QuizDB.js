@@ -22,4 +22,15 @@ export class QuizDB {
         if (!mongoose.Types.ObjectId.isValid(quizId)) return null;
         return await Quiz.findById(quizId).lean();
     }
+
+    //Mark quiz as submitted with score
+    static async markSubmitted(quizId, score, passed) {
+        if (!mongoose.Types.ObjectId.isValid(quizId)) return null;
+        return await Quiz.findByIdAndUpdate(quizId, {
+            status: "submitted",
+            score,
+            passed,
+            submittedAt: new Date(),
+        });
+    }
 }

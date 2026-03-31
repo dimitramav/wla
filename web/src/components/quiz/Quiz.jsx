@@ -75,11 +75,13 @@ const Quiz = ({ topic, docsetHash, userId, PASS_THRESHOLD, onShowProgress }) => 
                                 disabled={!allAnswered || loading}
                                 onClick={async () => {
                                     const correctCount = questions.reduce((acc, q) => {
-                                        return acc + (answers[q.id] === q.correct ? 1 : 0);
+                                        const userAns = answers[q.id];
+                                        const isCorrect = userAns != null && userAns.charAt(0) === q.correct.charAt(0);
+                                        return acc + (isCorrect ? 1 : 0);
                                     }, 0);
                                     const passed = correctCount >= PASS_THRESHOLD;
                                     try {
-                                        const success = await submitQuiz(
+                                        const result = await submitQuiz(
                                             topic,
                                             quizId,
                                             correctCount,
@@ -88,7 +90,7 @@ const Quiz = ({ topic, docsetHash, userId, PASS_THRESHOLD, onShowProgress }) => 
                                             answers
                                         );
 
-                                        if (success) {
+                                        if (result?.success) {
                                             setSubmitted(true);
                                         } else {
                                             alert("Submission failed. Try again.");

@@ -104,7 +104,9 @@ router.post("/:topic/quiz/submit", async (req, res, next) => {
 
         for (const q of quiz.questions) {
             const userAnswer = answers[q.id]; // direct lookup
-            const isCorrect = userAnswer === q.correct; // simple strict compare
+            // For MCQ, user answer is the full option string (e.g. "A) text") while
+            // correct is just the letter (e.g. "A"), so compare first characters only
+            const isCorrect = userAnswer != null && userAnswer.charAt(0) === q.correct.charAt(0);
             const kws = Array.isArray(q.keywords) ? q.keywords : [];
             for (const kw of kws) {
                 const statIndex = lvl.keywordStats.findIndex(s => s.keyword === kw);
@@ -127,6 +129,7 @@ router.post("/:topic/quiz/submit", async (req, res, next) => {
         }
 
         await prog.save();
+        await QuizDB.markSubmitted(quizId, correctCount, passed);
         return res.status(200).json({ success: true });
 
 

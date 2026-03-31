@@ -56,8 +56,9 @@ export NVM_DIR="$HOME/.nvm"
 # shellcheck source=/dev/null
 [[ -s "$NVM_DIR/nvm.sh" ]] && . "$NVM_DIR/nvm.sh"
 
-# Ensure web/.env exists
-[[ -f "$ROOT/web/.env" ]] || echo "VITE_API_BASE=http://localhost:3001" > "$ROOT/web/.env"
+
+# Ensure root .env exists
+[[ -f "$ROOT/.env" ]] || echo "VITE_API_BASE=http://localhost:3001" > "$ROOT/.env"
 
 cd "$ROOT/api"
 npm run dev > /tmp/wla-express.log 2>&1 &
@@ -74,7 +75,7 @@ VENV_PYTHON="$ROOT/services/.venv/bin/python"
 [[ -x "$VENV_PYTHON" ]] || die ".venv not found — run: python3 -m venv services/.venv && pip install -r services/requirements.txt"
 
 cd "$ROOT/services"
-"$VENV_PYTHON" -m uvicorn api.main:app \
+"$VENV_PYTHON" -m uvicorn api.main:create_app \
   --factory \
   --host 0.0.0.0 \
   --port 8000 \
