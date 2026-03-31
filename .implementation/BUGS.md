@@ -2,7 +2,6 @@
 
 **Project:** Watch-Listen-Act (WLA)
 **Phase:** 1 — Bug Hunting & Stabilization
-**Thesis chapter:** Chapter 4 — Implementation
 
 ---
 
