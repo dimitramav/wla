@@ -5,33 +5,33 @@
 .dashboard-grid {
     display: grid;
     grid-template-columns: 15% 85%;
+    grid-template-rows: 1fr 30px;
     padding-right: 20px;
     height: inherit;
     overflow: hidden;
 
     .main-area {
         display: grid;
-        grid-template-rows: 48px auto 40px;
-        height: inherit;
+        grid-template-rows: 38px 1fr;
+        min-height: 0;
 
         .content-grid {
             display: grid;
             grid-template-columns: 60% 40%;
             gap: $spacing-md;
-            padding: $spacing-md;
-            height: inherit;
+            padding-left: $spacing-md;
+            padding-right: $spacing-md;
+            min-height: 0;
             overflow: hidden;
 
             .tutors-panel {
                 display: flex;
                 flex-direction: column;
                 overflow: hidden;
-                padding: $spacing-md;
+                padding: $spacing-sm;
                 gap: $spacing-sm;
-                max-height: calc(100% - 90px);
                 border-radius: $radius-xl;
-                box-shadow: $elevation-2;
-                background-color: #fff;
+
 
                 .drawer-panel {
                     border: 1px solid $color-border;
@@ -44,6 +44,8 @@
                     opacity: 0;
                     overflow: hidden;
                     max-height: inherit;
+                    box-shadow: $elevation-2;
+                    background-color: #fff;
                 }
 
                 @keyframes slideUp {

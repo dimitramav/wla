@@ -13,7 +13,6 @@ export default function Navbar() {
 
     return (
         <div className="navbar">
-            <span className="navbar-greeting">Welcome, {user?.email}</span>
             <p className="link link-danger" onClick={handleSignOut}>
                 Sign out
             </p>

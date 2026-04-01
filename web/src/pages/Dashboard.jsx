@@ -38,8 +38,9 @@ const DashboardContent = () => {
                         </div>
                     </div>
                 </div>
-                <Footer />
             </div>
+            <Footer />
+
         </div>
     );
 };

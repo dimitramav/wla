@@ -1,8 +1,9 @@
 .footer {
+    grid-column: 1 / -1;
     display: flex;
     justify-content: center;
     align-items: center;
-    padding: $spacing-xs $spacing-md;
+    padding: $spacing-xs $spacing-xs;
     border-top: 1px solid $color-border;
 
     .footer-text {

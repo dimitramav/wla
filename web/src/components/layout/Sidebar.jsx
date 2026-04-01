@@ -23,7 +23,9 @@ const Sidebar = () => {
                         className={topic === item.slug ? "selected" : ""}
                         onClick={() => setTopic(item.slug)}
                     >
-                        <h3>{item.label}</h3>
+                        <div className="tab-inner">
+                            <h3>{item.label}</h3>
+                        </div>
                     </li>
                 ))}
             </ul>
