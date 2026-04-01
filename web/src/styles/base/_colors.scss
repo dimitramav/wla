@@ -1,0 +1,99 @@
+// === BRAND PALETTE ===
+$color-primary: #10b981;
+$color-primary-light: #cbf7e0;
+$color-primary-dark: #065f46;
+
+$color-secondary: #f59e0b;
+$color-secondary-light: #fef3c7;
+$color-secondary-dark: #d15d15;
+
+$color-accent: #3b82f6;
+$color-accent-light: #e0efff;
+$color-accent-dark: #1e40af;
+
+// === NEUTRALS ===
+$color-bg: #fafafa;
+$color-bg-card: #f5f5f5;
+$color-text: #1f2937;
+$color-text-secondary: #4b5563;
+$color-text-muted: #9ca3af;
+$color-border: #e5e7eb;
+
+// === GRAY SCALE ===
+$gray-100: #f3f4f6;
+$gray-200: #e5e7eb;
+$gray-300: #d1d5db;
+$gray-400: #9ca3af;
+$gray-500: #6b7280;
+$gray-600: #4b5563;
+
+// === FEEDBACK ===
+$color-success: #22c55e;
+$color-warning: #facc15;
+$color-error: #ef4444;
+$color-info: #0ea5e9;
+
+// === UTILITY ===
+$shadow-color: rgba(0, 0, 0, 0.1);
+$overlay-bg: rgba(31, 41, 55, 0.7);
+
+// === BACKWARD-COMPATIBLE ALIASES ===
+$primary: $color-primary;
+$primary-light: $color-primary-light;
+$primary-dark: $color-primary-dark;
+$primary-transparent: rgba(16, 185, 129, 0.1);
+$primary-light-transparent: rgba(203, 247, 224, 0.5);
+
+$secondary: $color-secondary;
+$secondary-light: $color-secondary-light;
+$secondary-dark: $color-secondary-dark;
+
+$accent: $color-accent;
+$accent-light: $color-accent-light;
+$accent-dark: $color-accent-dark;
+
+$light: $color-bg;
+$light-alt: $color-bg-card;
+$dark: $color-text;
+$dark-alt: #374151;
+
+$success: $color-success;
+$warning: $color-warning;
+$error: $color-error;
+$info: $color-info;
+
+// === THEME TOKENS ===
+$bg-body: $color-bg;
+$bg-card: $color-bg-card;
+$text-primary: $color-text;
+$text-secondary: $color-text-secondary;
+$text-muted: $color-text-muted;
+$border-color: $color-border;
+$focus-ring: $color-primary-light;
+
+// === COMPONENT COLOR TOKENS ===
+$btn-primary-bg: $color-primary;
+$btn-primary-hover: darken($color-primary, 7%);
+$btn-secondary-bg: $color-secondary;
+$btn-secondary-hover: darken($color-secondary, 7%);
+$btn-accent-bg: $color-accent;
+$btn-accent-hover: darken($color-accent, 7%);
+$btn-disabled-bg: $gray-300;
+
+$drawer-bg: $color-bg;
+$drawer-shadow: 0 -8px 20px rgba(0, 0, 0, 0.15);
+
+$navbar-bg: $color-text;
+$navbar-text: #ffffff;
+
+$sidebar-bg: #f8fafc;
+$sidebar-hover: #e2e8f0;
+$sidebar-active: $color-primary-light;
+
+// === CSS CUSTOM PROPERTIES ===
+:root {
+  --color-primary: #{$color-primary};
+  --color-bg: #{$color-bg};
+  --color-text: #{$color-text};
+  --border-radius: 0.6rem;
+}
