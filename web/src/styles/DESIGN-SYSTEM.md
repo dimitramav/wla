@@ -129,4 +129,76 @@ Import tokens in any SCSS file via the main entry point:
 
 ---
 
+## Component Library
+
+All base components live in `web/src/styles/base/` and `web/src/styles/components/`. They consume tokens from the design system — no hardcoded values.
+
+### Buttons (`_buttons.scss`)
+
+Base class `.btn` + one variant modifier. Optionally `.btn-sm`, `.btn-lg`, `.btn-block`.
+
+| Class | Token backing | Use case |
+|-------|--------------|---------|
+| `.btn-primary` | `$btn-primary-bg`, `$btn-primary-hover` | Main CTA — submit, confirm |
+| `.btn-secondary` | `$btn-secondary-bg`, `$btn-secondary-hover` | Supporting action |
+| `.btn-accent` | `$btn-accent-bg`, `$btn-accent-hover` | Informational action |
+| `.btn-outline-primary` | `$primary`, `$primary-light` | Low-weight primary |
+| `.btn-outline-accent` | `$accent`, `$accent-light` | Low-weight accent |
+| `.btn-success` | `$color-success` | Correct / positive outcome |
+| `.btn-warning` | `$color-warning` | Caution action |
+| `.btn-error` | `$color-error` | Destructive / incorrect |
+
+All buttons share: `$font-family-heading` (Inter 700), `$focus-ring` focus ring, `var(--border-radius)` radius, `transform: translateY(1px)` on `:active`. Disabled state uses `$btn-disabled-bg`.
+
+### Form Inputs (`_forms.scss`)
+
+Classes `.input` and `.textarea`. State modifiers:
+
+| Modifier | Token | When |
+|----------|-------|------|
+| *(default)* | `$border-color`, `$bg-card` | Idle |
+| `:hover` | `$gray-300` border | Mouse over |
+| `:focus` | `$focus-ring` border + ring | Keyboard/click focus |
+| `.is-error` | `$color-error` border + ring | Validation failure |
+| `.is-success` | `$color-success` border + ring | Validation pass |
+| `:disabled` / `.is-disabled` | `$gray-100` bg, `$text-secondary` | Non-interactive |
+
+### Layout Components
+
+| Component | File | Key tokens |
+|-----------|------|-----------|
+| Navbar | `components/_navbar.scss` | `$navbar-bg` (`$color-text`), `$navbar-text` (#fff) |
+| Sidebar | `components/_sidebar.scss` | `$sidebar-bg`, `$sidebar-hover`, `$sidebar-active` |
+| Panel | `components/_panel.scss` | `$bg-card`, `$border-color`, `$elevation-1/2` |
+| Header | `components/_header.scss` | `$color-text`, `$color-bg` |
+| Footer | `components/_footer.scss` | `$color-text-muted`, `$color-border` |
+
+### Quiz Components (`components/_quiz.scss`)
+
+Quiz answer feedback uses the feedback color system:
+- Correct answer → `$color-success`
+- Incorrect answer → `$color-error`
+- Neutral/unselected → `$color-bg-card`, `$color-border`
+
+### Progress Charts (`components/_progress.scss`)
+
+Progress visualizations use `$color-primary` as the primary data series color, with `$color-accent` for secondary series and `$gray-200` for grid/background tracks.
+
+---
+
+## Component Token Dependency Map
+
+```
+Buttons ──────── $btn-*-bg, $btn-*-hover, $focus-ring, $btn-disabled-bg
+Forms ──────────  $border-color, $bg-card, $text-primary, $text-muted, $focus-ring, $color-error, $color-success
+Navbar ──────────  $navbar-bg → $color-text, $navbar-text
+Sidebar ─────────  $sidebar-bg, $sidebar-hover, $sidebar-active → $color-primary-light
+Quiz ────────────  $color-success, $color-error, $color-bg-card
+Progress ────────  $color-primary, $color-accent, $gray-200
+```
+
+All component tokens resolve to the 19 semantic `$color-*` primitives defined in `_colors.scss`. Changing a primitive propagates through every component that uses it.
+
+---
+
 *Design system established: 2026-04-01 — Phase 2 (UI-01, UI-08)*
