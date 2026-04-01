@@ -1,12 +1,13 @@
-import { useState } from 'react';
 import { useTopic } from '../../hooks/useTopic';
 import logo from "../../assets/full-logo.png";
 
-const Sidebar = () => {
-    const { topic } = useTopic();
-    const items = ["School Anxiety", "Depression"];
+const TOPIC_ITEMS = [
+    { label: "School Anxiety", slug: "school_anxiety" },
+    { label: "Depression", slug: "depression" },
+];
 
-    const [selectedTopic, setSelectedTopic] = useState(0);
+const Sidebar = () => {
+    const { topic, setTopic } = useTopic();
 
     return (
         <div className='sidebar'>
@@ -16,13 +17,13 @@ const Sidebar = () => {
                 onClick={() => window.location.reload()}
             />
             <ul className="sidebar-list">
-                {items.map((item, index) => (
+                {TOPIC_ITEMS.map((item) => (
                     <li
-                        key={index}
-                        className={selectedTopic === index ? "selected" : ""}
-                        onClick={() => setSelectedTopic(index)}
+                        key={item.slug}
+                        className={topic === item.slug ? "selected" : ""}
+                        onClick={() => setTopic(item.slug)}
                     >
-                        <h3>{item}</h3>
+                        <h3>{item.label}</h3>
                     </li>
                 ))}
             </ul>

@@ -8,9 +8,10 @@ import Progress from '../components/viewers/Progress';
 import Quiz from '../components/quiz/Quiz';
 import { useTopic } from '../hooks/useTopic';
 import { useAuth } from "../context/AuthContext";
+import { TopicProvider } from '../context/TopicContext';
 import { useState } from 'react';
 
-const Dashboard = () => {
+const DashboardContent = () => {
     const PASS_THRESHOLD = import.meta.env.PASS_THRESHOLD;
     const { topic, docsetHash } = useTopic();
     const { user } = useAuth();
@@ -26,8 +27,7 @@ const Dashboard = () => {
                 <Navbar />
                 <div className="content-grid">
                     <div className='tutors-panel'>
-                        <TheoryPanel onShow={handleShow} activeDrawer={activeDrawer}
-                        />
+                        <TheoryPanel onShow={handleShow} activeDrawer={activeDrawer} />
                         {activeDrawer === 'progress' && <div className='drawer-panel'><Progress topic={topic} userId={user?.id} PASS_THRESHOLD={PASS_THRESHOLD} /></div>}
                         {activeDrawer === 'quiz' && <div className='drawer-panel'><Quiz topic={topic} docsetHash={docsetHash} userId={user?.id} PASS_THRESHOLD={PASS_THRESHOLD} onShowProgress={() => setActiveDrawer("progress")} /></div>}
                     </div>
@@ -38,9 +38,17 @@ const Dashboard = () => {
                         </div>
                     </div>
                 </div>
-                {/* <Footer /> */}
+                <Footer />
             </div>
         </div>
+    );
+};
+
+const Dashboard = () => {
+    return (
+        <TopicProvider>
+            <DashboardContent />
+        </TopicProvider>
     );
 };
 

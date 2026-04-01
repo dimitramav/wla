@@ -18,25 +18,34 @@
         list-style: none;
         display: flex;
         flex-direction: column;
-        gap: 20px;
+        gap: $spacing-md;
         align-items: flex-end;
+        padding: 0;
+        margin: 0;
 
         li {
-            color: $secondary;
-            padding: 10px;
-            border-radius: 8px 0px 0px 8px;
-            width: 80%;
-            border: 2px solid $secondary;
+            color: $color-secondary;
+            padding: $spacing-sm $spacing-md;
+            border-radius: 0 $radius-xl $radius-xl 0;
+            width: 85%;
+            border: 2px solid $color-secondary;
+            background-color: transparent;
+            transition: background-color 0.2s ease;
 
             &.selected {
-                color: $light;
-                border: 2px solid $secondary;
-                background-color: $secondary;
+                color: #fff;
+                background-color: $color-secondary;
+                border-color: $color-secondary;
             }
 
             &:not(.selected):hover {
-                background-color: $secondary-light;
+                background-color: $color-secondary-light;
                 cursor: pointer;
+            }
+
+            h3 {
+                margin: 0;
+                font-size: 0.9rem;
             }
         }
     }

@@ -1,7 +1,13 @@
 .navbar {
-    padding: 0 16px;
+    padding: 0 $spacing-md;
     display: flex;
     flex-direction: row;
-    justify-content: flex-end; // horizontal alignment (right)
+    justify-content: space-between;
     align-items: center;
+
+    .navbar-greeting {
+        font-size: 0.9rem;
+        color: $color-text-secondary;
+        font-weight: 500;
+    }
 }

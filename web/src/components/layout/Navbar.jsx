@@ -1,7 +1,7 @@
 import { useAuth } from "../../context/AuthContext";
 
 export default function Navbar() {
-    const { logout } = useAuth();
+    const { user, logout } = useAuth();
 
     const handleSignOut = async () => {
         try {
@@ -13,6 +13,7 @@ export default function Navbar() {
 
     return (
         <div className="navbar">
+            <span className="navbar-greeting">Welcome, {user?.email}</span>
             <p className="link link-danger" onClick={handleSignOut}>
                 Sign out
             </p>
