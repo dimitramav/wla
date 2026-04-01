@@ -13,7 +13,7 @@ import { useState } from 'react';
 
 const DashboardContent = () => {
     const PASS_THRESHOLD = import.meta.env.PASS_THRESHOLD;
-    const { topic, docsetHash } = useTopic();
+    const { topic, docsetHash, loading, error } = useTopic();
     const { user } = useAuth();
     const [selectedUrl, setSelectedUrl] = useState(undefined);
     const [activeDrawer, setActiveDrawer] = useState(null); // 'progress' | 'quiz' | null
@@ -27,7 +27,8 @@ const DashboardContent = () => {
                 <Navbar />
                 <div className="content-grid">
                     <div className='tutors-panel'>
-                        <TheoryPanel onShow={handleShow} activeDrawer={activeDrawer} />
+                        {loading && <div className="panel-loading" />}
+                        {!loading && <TheoryPanel onShow={handleShow} activeDrawer={activeDrawer} />}
                         {activeDrawer === 'progress' && <div className='drawer-panel'><Progress topic={topic} userId={user?.id} PASS_THRESHOLD={PASS_THRESHOLD} /></div>}
                         {activeDrawer === 'quiz' && <div className='drawer-panel'><Quiz topic={topic} docsetHash={docsetHash} userId={user?.id} PASS_THRESHOLD={PASS_THRESHOLD} onShowProgress={() => setActiveDrawer("progress")} /></div>}
                     </div>

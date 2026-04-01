@@ -7,10 +7,12 @@ const DocumentList = ({ onSelect }) => {
     const { topic } = useTopic();
     const [docs, setDocs] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
     const [selectedUrl, setSelectedUrl] = useState(null);
 
     useEffect(() => {
         setLoading(true);
+        setError(null);
         getDocs(topic)
             .then(d => {
                 const docList = d.docs || [];
@@ -20,11 +22,12 @@ const DocumentList = ({ onSelect }) => {
                     onSelect(docList[0].url); // Automatically select first doc
                 }
             })
+            .catch(() => setError(true))
             .finally(() => setLoading(false));
     }, [topic, onSelect]);
 
-    if (loading) return <div>Loading...</div>;
-    if (!docs.length) return <div>No documents found</div>;
+    if (loading) return <div className="panel-loading" />;
+    if (error || !docs.length) return null;
 
     // TreeView Structure with topic as root
     const renderTree = (docs) => {

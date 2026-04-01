@@ -85,6 +85,50 @@
             }
         }
 
+        &.disabled {
+            cursor: not-allowed;
+            opacity: 0.45;
+            pointer-events: none;
+
+            &::before {
+                background-color: $gray-300;
+            }
+
+            .tab-inner {
+                background-color: $gray-200;
+                color: $color-text-muted;
+            }
+        }
+
+        &.disabled[data-tooltip] {
+            pointer-events: auto;
+            cursor: not-allowed;
+
+            &::after {
+                content: attr(data-tooltip);
+                position: absolute;
+                top: calc(100% + 8px);
+                left: 50%;
+                transform: translateX(-50%);
+                background: $color-text;
+                color: #fff;
+                font-size: 0.75rem;
+                font-weight: 500;
+                padding: $spacing-xs $spacing-md;
+                border-radius: $radius-md;
+                box-shadow: $elevation-3;
+                white-space: nowrap;
+                opacity: 0;
+                pointer-events: none;
+                transition: opacity 0.2s ease;
+                z-index: 20;
+            }
+
+            &:hover::after {
+                opacity: 1;
+            }
+        }
+
         h3 {
             margin: 0;
             font-size: inherit;
