@@ -1,41 +1,51 @@
+.wrapper {
+    background: linear-gradient(135deg, $color-bg 0%, #e8f5f0 100%);
+}
+
 .dashboard-grid {
     display: grid;
     grid-template-columns: 15% 85%;
+    grid-template-rows: 1fr 30px;
     padding-right: 20px;
     height: inherit;
     overflow: hidden;
 
     .main-area {
         display: grid;
-        grid-template-rows: 48px auto;
-        height: inherit;
+        grid-template-rows: 38px 1fr;
+        min-height: 0;
 
         .content-grid {
             display: grid;
             grid-template-columns: 60% 40%;
-            height: inherit;
+            gap: $spacing-md;
+            padding-left: $spacing-md;
+            padding-right: $spacing-md;
+            min-height: 0;
+            overflow: hidden;
 
             .tutors-panel {
                 display: flex;
                 flex-direction: column;
                 overflow: hidden;
-                padding: 10px;
-                height: inherit;
-                gap: 10px;
-                max-height: calc(100% - 90px);
-                height: inherit;
+                padding: $spacing-sm;
+                gap: $spacing-sm;
+                border-radius: $radius-xl;
+
 
                 .drawer-panel {
-                    border: 1px solid $border-color;
+                    border: 1px solid $color-border;
                     overflow-y: auto;
-                    padding: 20px;
-                    border-radius: 6px;
+                    padding: $spacing-md;
+                    border-radius: $radius-md;
                     height: fit-content;
                     animation: slideUp 0.8s ease-out forwards;
                     transform: translateY(100%);
                     opacity: 0;
                     overflow: hidden;
                     max-height: inherit;
+                    box-shadow: $elevation-2;
+                    background-color: #fff;
                 }
 
                 @keyframes slideUp {
@@ -44,12 +54,14 @@
                         opacity: 1;
                     }
                 }
-
             }
 
             .documents-panel {
                 overflow: auto;
                 height: inherit;
+                border-radius: $radius-xl;
+                box-shadow: $elevation-2;
+                background-color: #fff;
 
                 .documents-grid {
                     display: grid;
@@ -57,10 +69,8 @@
                     height: inherit;
 
                     .document-list {
-                        border-right: 1px solid #ddd;
+                        border-right: 1px solid $color-border;
                     }
-
-
                 }
             }
         }

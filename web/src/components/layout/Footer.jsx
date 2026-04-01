@@ -1,7 +1,7 @@
 const Footer = () => {
     return (
         <div className="footer">
-            <p className="link link-danger">Sign out</p>
+            <p className="footer-text">© 2026 Watch · Listen · Act — Dimitra Mavroforaki · University of Piraeus</p>
         </div>
     );
 }

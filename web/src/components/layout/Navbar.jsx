@@ -1,7 +1,7 @@
 import { useAuth } from "../../context/AuthContext";
 
 export default function Navbar() {
-    const { logout } = useAuth();
+    const { user, logout } = useAuth();
 
     const handleSignOut = async () => {
         try {
