@@ -2,3 +2,23 @@
 $transition-fast: 150ms ease-in-out;
 $transition-standard: 300ms ease-in-out;
 $transition-slow: 500ms ease-in-out;
+
+// SKELETON SHIMMER
+$skeleton-base: $gray-200;       // #e5e7eb — main gray
+$skeleton-highlight: $gray-100;  // #f3f4f6 — lighter gray for sweep
+
+@keyframes shimmer {
+  0% {
+    background-position: -1000px 0;
+  }
+  100% {
+    background-position: 1000px 0;
+  }
+}
+
+// QUIZ CIRCLE DRAW
+@keyframes draw-circle {
+  to {
+    stroke-dashoffset: 0;
+  }
+}

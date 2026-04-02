@@ -58,17 +58,58 @@
                     .q-options {
                         .q-opt {
                             display: block;
+                            cursor: pointer;
+                            padding: $spacing-xs $spacing-sm;
+                            border-radius: $radius-md;
+                            transition: background-color $transition-standard;
 
                             input[type="radio"] {
-                                margin-right: 8px;
-                                accent-color: $primary;
-
-                                &:hover {
-                                    cursor: pointer;
-                                }
-
-
+                                margin-right: 0;
+                                accent-color: $color-accent;
+                                cursor: pointer;
                             }
+
+                            &:has(input:not(:checked)):hover {
+                                background-color: rgba($color-accent, 0.06);
+                            }
+
+                            &:not(.selected):hover {
+                                background-color: rgba($color-accent, 0.06);
+                            }
+                        }
+                    }
+
+                    // Bullet wrapper — positions the SVG circle over the radio input only
+                    .q-opt-bullet {
+                        position: relative;
+                        display: inline-flex;
+                        align-items: center;
+                        margin-right: 8px;
+                        vertical-align: middle;
+                    }
+
+                    .q-opt-circle {
+                        position: absolute;
+                        top: 50%;
+                        left: 50%;
+                        transform: translate(-50%, -50%);
+                        width: 26px;
+                        height: 26px;
+                        pointer-events: none;
+                        overflow: visible;
+                    }
+
+                    .q-opt-circle-stroke {
+                        fill: none;
+                        stroke: $color-accent;
+                        stroke-width: 2.5;
+                        stroke-linecap: round;
+                        stroke-linejoin: round;
+                        stroke-dasharray: 100;
+                        stroke-dashoffset: 100;
+
+                        &.active {
+                            animation: draw-circle 0.45s ease-in-out forwards;
                         }
                     }
 

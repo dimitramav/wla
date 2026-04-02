@@ -80,7 +80,7 @@
             gap: $spacing-sm;
             border-radius: $radius-xl;
 
-            &:has(.empty-state) {
+            &:has(.empty-state):not(.tutors-panel--drawer) {
                 height: fit-content;
             }
 
@@ -97,7 +97,14 @@
                 max-height: inherit;
                 box-shadow: $elevation-2;
                 background-color: #fff;
+
+                &:has(.loader-wrapper) {
+                    height: 100%;
+                    position: relative;
+                }
+
             }
+
 
             @keyframes slideUp {
                 to {
@@ -259,7 +266,15 @@
                         height: auto;
                         max-height: none;
                         overflow-y: auto;
+
+                        &:has(.loader-wrapper) {
+                            flex: none;
+                            height: 50%;
+                            position: relative;
+                        }
                     }
+
+
                 }
             }
 
