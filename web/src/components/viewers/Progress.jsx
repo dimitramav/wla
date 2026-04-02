@@ -40,7 +40,8 @@ const Progress = ({ topic, userId, PASS_THRESHOLD }) => {
         />
     );
     if (loading) return <Loader message="Calculating progress..." />;
-    if (!data || (data.perLevel?.length === 0 && data.unlockedLevel === 0)) return (
+    const hasAttempts = data?.perLevel?.some(l => l.attempts > 0);
+    if (!data || !hasAttempts) return (
         <EmptyState
             icon={FiBarChart2}
             title="No progress yet"
