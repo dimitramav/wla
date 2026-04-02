@@ -3,7 +3,7 @@ import logo from "../../assets/full-logo.png";
 
 const TOPIC_ITEMS = [
     { label: "School Anxiety", slug: "school_anxiety", available: true },
-    { label: "Depression", slug: "depression", available: false },
+    { label: "Depression", slug: "depression", available: true },
     { label: "ADHD", slug: "adhd", available: false },
     { label: "Bullying", slug: "bullying", available: false },
     { label: "Eating Disorders", slug: "eating_disorders", available: false },

@@ -1,35 +1,20 @@
 import { useEffect, useRef, useState } from 'react';
-import { getDocs } from '../../api/docs';
-import { useTopic } from '../../hooks/useTopic';
 import { FiChevronLeft, FiChevronRight } from 'react-icons/fi';
 
 const SCROLL_AMOUNT = 240;
 
-const DocumentList = ({ onSelect }) => {
-    const { topic } = useTopic();
-    const [docs, setDocs] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
+const DocumentList = ({ docs, onSelect }) => {
     const [selectedUrl, setSelectedUrl] = useState(null);
     const [canScrollLeft, setCanScrollLeft] = useState(false);
     const [canScrollRight, setCanScrollRight] = useState(false);
     const rowRef = useRef(null);
 
     useEffect(() => {
-        setLoading(true);
-        setError(null);
-        getDocs(topic)
-            .then(d => {
-                const docList = d.docs || [];
-                setDocs(docList);
-                if (docList.length > 0) {
-                    setSelectedUrl(docList[0].url);
-                    onSelect(docList[0].url);
-                }
-            })
-            .catch(() => setError(true))
-            .finally(() => setLoading(false));
-    }, [topic, onSelect]);
+        if (docs.length > 0) {
+            setSelectedUrl(docs[0].url);
+            onSelect(docs[0].url);
+        }
+    }, [docs, onSelect]);
 
     const updateArrows = () => {
         const el = rowRef.current;
@@ -50,9 +35,6 @@ const DocumentList = ({ onSelect }) => {
             ro.disconnect();
         };
     }, [docs]);
-
-    if (loading) return <div className="panel-loading" />;
-    if (error || !docs.length) return null;
 
     const scroll = (dir) => {
         rowRef.current?.scrollBy({ left: dir * SCROLL_AMOUNT, behavior: 'smooth' });
