@@ -1,6 +1,19 @@
 .sidebar {
     width: 100%;
 
+    @media (max-width: 1279px) {
+        padding: $spacing-xs $spacing-md;
+        border-bottom: 1px solid $color-border;
+
+
+        img {
+            display: block;
+            width: 40% !important;
+            margin: 0 auto $spacing-sm !important;
+            padding: 0 !important;
+        }
+    }
+
     img {
         width: 100%;
         max-width: inherit;
@@ -22,43 +35,21 @@
     flex-direction: column;
     gap: 10px;
     padding: 0;
-    margin: 0;
+
 
     li {
-        position: relative;
         cursor: pointer;
         transition: transform 0.15s ease;
 
-        &::before {
-            content: '';
-            position: absolute;
-            inset: -1.5px;
-            background-color: rgba(245, 158, 11, 0.5);
-            clip-path: polygon(0% 0%,
-                    88% 0%,
-                    100% 50%,
-                    88% 100%,
-                    0% 100%);
-            z-index: 0;
-            transition: background-color 0.15s ease;
+        .tab-inner {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border: 20px solid transparent;
+            border-right: 20px solid $bg-body;
+            border-radius: 12px 0px 0px 12px; // ADDED: rounded corners on left side only
         }
 
-        .tab-inner {
-            position: relative;
-            padding: 12px 40px 12px 20px;
-            background-color: #fff;
-            clip-path: polygon(0% 0%,
-                    88% 0%,
-                    100% 50%,
-                    88% 100%,
-                    0% 100%);
-            z-index: 1;
-            font-size: 0.8rem;
-            font-weight: 500;
-            color: $color-secondary;
-            letter-spacing: 0.01em;
-            transition: background-color 0.15s ease;
-        }
 
         &.selected {
             transform: translateX(4px);
@@ -107,7 +98,7 @@
             &::after {
                 content: attr(data-tooltip);
                 position: absolute;
-                top: calc(100% + 8px);
+                top: calc(100% + 10px);
                 left: 50%;
                 transform: translateX(-50%);
                 background: $color-text;
@@ -130,31 +121,22 @@
         }
 
         h3 {
-            margin: 0;
-            font-size: inherit;
+
             font-weight: inherit;
             white-space: nowrap;
+            position: absolute;
         }
     }
 
-    // Tablet — smaller tabs, tighter spacing
-    @media (max-width: 1280px) {
-        gap: 8px;
-
-        li {
-            .tab-inner {
-                padding: 10px 32px 10px 14px;
-                font-size: 0.75rem;
-            }
-        }
-    }
-
-    // Mobile — flip to horizontal scrollable row of chips
-    @media (max-width: 768px) {
+    // Responsive — flip to horizontal scrollable row of chips below 1279px
+    @media (max-width: 1279px) {
         flex-direction: row;
         overflow-x: auto;
         gap: 8px;
-        padding-bottom: 4px;
+        padding-top: $spacing-xl;
+        padding-bottom: $spacing-lg;
+        padding-left: $spacing-md;
+        min-width: 100%;
 
         // Hide scrollbar but keep scroll
         scrollbar-width: none;
@@ -174,10 +156,10 @@
             }
 
             .tab-inner {
-                padding: 8px 20px;
-                clip-path: none;
-                border-radius: 999px;
-                font-size: 0.75rem;
+                width: 120px;
+                border: 15px solid transparent;
+                border-right: 20px solid $bg-body;
+                border-radius: 12px 0px 0px 12px; // ADDED: rounded corners on left side only                font-size: 0.75rem;
                 white-space: nowrap;
             }
 
@@ -188,6 +170,14 @@
             &:not(.selected):hover {
                 transform: translateY(-1px);
             }
+
+            &.disabled[data-tooltip] {
+                &::after {
+                    top: auto;
+                    bottom: calc(100% + 8px);
+                }
+            }
+
         }
     }
 }
