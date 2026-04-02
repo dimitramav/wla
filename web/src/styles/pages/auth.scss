@@ -1,32 +1,113 @@
 .auth-container {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: inherit;
+  height: 100vh;
+  width: 100%;
+}
 
+.auth-split {
+  display: flex;
+  flex-direction: row;
+  height: 100%;
+}
+
+.auth-hero {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: $spacing-lg;
+  background: linear-gradient(135deg, $color-primary-light 0%, $color-primary 100%);
+  padding: $spacing-2xl;
+
+  &__illustration {
+    width: 180px;
+    height: 180px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: $spacing-lg;
+    box-sizing: border-box;
+
+    img {
+      width: 100%;
+      height: auto;
+    }
+  }
+
+  &__tagline {
+    font-size: 2rem;
+    font-weight: 700;
+    color: $color-primary-dark;
+    text-align: center;
+    margin: 0;
+  }
+
+  &__subtitle {
+    font-size: 1rem;
+    color: $color-primary-dark;
+    text-align: center;
+    margin: 0;
+    opacity: 0.85;
+  }
+}
+
+.auth-form-wrapper {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #ffffff;
+  padding: $spacing-2xl;
 
   .auth-form {
     display: flex;
     flex-direction: column;
-    align-items: start;
-    border: 2px solid $border-color;
-    border-radius: 12px;
-    padding-top: 15px;
-    padding-bottom: 15px;
-    background-color: $drawer-bg;
-    padding-left: 35px;
-    padding-right: 35px;
-    gap: 8px;
-  }
-
-  div {
+    align-items: stretch;
     width: 100%;
+    max-width: 380px;
+    gap: $spacing-md;
+
+    img {
+      width: 140px;
+      align-self: center;
+      margin-bottom: $spacing-sm;
+    }
+
+    .input {
+      border-radius: 999px;
+      padding: $spacing-sm $spacing-lg;
+      border: 1px solid $color-border;
+      width: 100%;
+      box-sizing: border-box;
+
+      &:focus {
+        outline: none;
+        border-color: $color-primary;
+        box-shadow: 0 0 0 3px $color-primary-light;
+      }
+    }
+
+    .btn-primary {
+      border-radius: 999px;
+      padding: $spacing-sm $spacing-xl;
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+
+      &:hover:not(:disabled) {
+        transform: translateY(-2px);
+        box-shadow: $elevation-2;
+      }
+    }
+  }
+}
+
+@media (max-width: 768px) {
+  .auth-hero {
+    display: none;
   }
 
-  img {
-    height: inherit;
-    width: inherit;
-
+  .auth-form-wrapper {
+    flex: 1;
   }
-
 }
