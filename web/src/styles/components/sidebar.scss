@@ -40,7 +40,7 @@
 
     li {
         cursor: pointer;
-        transition: transform 0.15s ease;
+        transition: transform $transition-fast, background-color $transition-fast;
         position: relative;
 
         .tab-inner {
@@ -120,7 +120,7 @@
                 white-space: nowrap;
                 opacity: 0;
                 pointer-events: none;
-                transition: opacity 0.2s ease;
+                transition: opacity $transition-fast;
                 z-index: 20;
             }
 

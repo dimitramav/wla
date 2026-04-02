@@ -16,7 +16,7 @@
         background: #fff;
         color: $color-text-secondary;
         cursor: pointer;
-        transition: background 0.15s, color 0.15s;
+        transition: background $transition-fast, color $transition-fast, border-color $transition-fast;
 
         &:hover {
             background: $gray-500;
@@ -46,7 +46,7 @@
         cursor: pointer;
         white-space: nowrap;
         font-size: 0.85rem;
-        transition: background 0.2s, color 0.2s;
+        transition: background $transition-standard, color $transition-standard, border-color $transition-standard;
 
         &.selected {
             background: $color-accent;
