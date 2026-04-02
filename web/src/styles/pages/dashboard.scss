@@ -80,6 +80,10 @@
             gap: $spacing-sm;
             border-radius: $radius-xl;
 
+            &:has(.empty-state) {
+                height: fit-content;
+            }
+
             .drawer-panel {
                 border: 1px solid $color-border;
                 overflow-y: auto;
@@ -109,6 +113,10 @@
             border-radius: $radius-xl;
             box-shadow: $elevation-2;
             background-color: #fff;
+
+            &:has(.empty-state) {
+                height: fit-content;
+            }
 
             .documents-grid {
                 display: flex;
@@ -207,11 +215,20 @@
             overflow-x: hidden;
             padding: $spacing-sm;
 
+            &:has(.theory-panel) {
+                overflow-y: hidden;
+            }
+
             // Hide both panels; show only the active tab's panel
             .tutors-panel,
             .documents-panel {
                 display: none;
             }
+
+            &:has(.empty-state) {
+                height: fit-content;
+            }
+
 
             &.content-grid--practice .tutors-panel {
                 display: flex;

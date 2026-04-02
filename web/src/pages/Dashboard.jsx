@@ -6,7 +6,10 @@ import Navbar from '../components/layout/Navbar';
 import Footer from "../components/layout/Footer";
 import Progress from '../components/viewers/Progress';
 import Quiz from '../components/quiz/Quiz';
+import EmptyState from '../components/layout/widgets/EmptyState';
+import { FiFile, FiAlertCircle } from 'react-icons/fi';
 import { useTopic } from '../hooks/useTopic';
+import { useDocs } from '../hooks/useDocs';
 import { useAuth } from "../context/AuthContext";
 import { TopicProvider } from '../context/TopicContext';
 import { useState } from 'react';
@@ -14,8 +17,9 @@ import { useState } from 'react';
 const DashboardContent = () => {
     const PASS_THRESHOLD = import.meta.env.PASS_THRESHOLD;
     const { topic, docsetHash, loading } = useTopic();
+    const { docs, loading: docsLoading, error: docsError } = useDocs();
     const { user } = useAuth();
-    const [selectedUrl, setSelectedUrl] = useState(undefined);
+    const [selectedUrl, setSelectedUrl] = useState(null);
     const [activeDrawer, setActiveDrawer] = useState(null); // 'progress' | 'quiz' | null
     const [activeTab, setActiveTab] = useState('practice'); // 'learn' | 'practice'
 
@@ -58,8 +62,29 @@ const DashboardContent = () => {
                 </div>
                 <div className="documents-panel">
                     <div className="documents-grid">
-                        <DocumentList onSelect={setSelectedUrl} />
-                        <PdfViewer url={selectedUrl} />
+                        {docsLoading && <div className="panel-loading" />}
+                        {!docsLoading && docsError && (
+                            <EmptyState
+                                icon={FiAlertCircle}
+                                title="Failed to load documents"
+                                message="Unable to fetch documents for this topic."
+                                variant="error"
+                            />
+                        )}
+                        {!docsLoading && !docsError && docs.length === 0 && (
+                            <EmptyState
+                                icon={FiFile}
+                                title="No documents"
+                                message="No documents are available for this topic yet."
+                                variant="empty"
+                            />
+                        )}
+                        {!docsLoading && !docsError && docs.length > 0 && (
+                            <>
+                                <DocumentList docs={docs} onSelect={setSelectedUrl} />
+                                {selectedUrl && <PdfViewer url={selectedUrl} />}
+                            </>
+                        )}
                     </div>
                 </div>
             </div>

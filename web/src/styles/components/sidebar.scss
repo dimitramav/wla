@@ -49,7 +49,11 @@
             align-items: center;
             border: 20px solid transparent;
             border-right: 20px solid $bg-body;
+            color: $color-secondary;
+            background-color: $color-secondary-light;
             border-radius: 12px 0px 0px 12px; // ADDED: rounded corners on left side only
+            box-shadow: 0 1px 0 0px $color-secondary;
+
         }
 
 
@@ -67,14 +71,16 @@
         }
 
         &:not(.selected):hover {
-            transform: translateX(2px);
+            &:not(.disabled) {
+                transform: translateX(4px);
 
-            &::before {
-                background-color: rgba(245, 158, 11, 0.6);
-            }
+                &::before {
+                    background-color: rgba(245, 158, 11, 0.6);
+                }
 
-            .tab-inner {
-                background-color: $color-secondary-light;
+                .tab-inner {
+                    background-color: $color-secondary-light;
+                }
             }
         }
 
@@ -90,6 +96,7 @@
             .tab-inner {
                 background-color: $gray-200;
                 color: $color-text-muted;
+                box-shadow: 0 1px 0 0px $gray-500;
             }
         }
 
@@ -159,20 +166,29 @@
                 inset: -1.5px;
             }
 
+
             .tab-inner {
                 width: 120px;
                 border: 15px solid transparent;
                 border-right: 20px solid $bg-body;
+                color: $color-secondary;
+                background-color: $color-secondary-light;
                 border-radius: 12px 0px 0px 12px; // ADDED: rounded corners on left side only                font-size: 0.75rem;
                 white-space: nowrap;
+                box-shadow: 0 1px 0 0px $color-secondary;
+
             }
 
             &.selected {
                 transform: translateY(-2px); // lift instead of slide
+                box-shadow: 0 1px 0 0px $color-secondary-dark;
+
             }
 
             &:not(.selected):hover {
-                transform: translateY(-1px);
+                &:not(.disabled) {
+                    transform: translateY(-1px);
+                }
             }
 
             &.disabled[data-tooltip] {
