@@ -1,0 +1,49 @@
+%shimmer-block {
+    background: linear-gradient(
+        90deg,
+        $skeleton-base 25%,
+        $skeleton-highlight 50%,
+        $skeleton-base 75%
+    );
+    background-size: 2000px 100%;
+    animation: shimmer 1.6s infinite linear;
+    border-radius: $radius-sm;
+}
+
+// Theory panel skeleton
+.skeleton-theory {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-sm;
+    padding: $spacing-xs 0;
+    flex: 1 1 auto;
+    overflow: hidden;
+
+    .skeleton-line {
+        @extend %shimmer-block;
+        height: 14px;
+
+        &--full  { width: 100%; }
+        &--lg    { width: 85%; }
+        &--md    { width: 70%; }
+        &--sm    { width: 55%; }
+    }
+}
+
+// Document chip row skeleton
+.skeleton-documents {
+    display: flex;
+    gap: $spacing-sm;
+    padding: $spacing-xs 0;
+
+    .skeleton-chip {
+        @extend %shimmer-block;
+        height: 32px;
+        border-radius: 999px;
+        flex-shrink: 0;
+
+        &--w1 { width: 100px; }
+        &--w2 { width: 140px; }
+        &--w3 { width: 120px; }
+    }
+}

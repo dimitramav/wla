@@ -1,6 +1,7 @@
 import { FiBookOpen, FiAlertCircle } from 'react-icons/fi';
 import { useTopic } from '../../hooks/useTopic';
 import EmptyState from '../layout/widgets/EmptyState';
+import SkeletonTheory from '../layout/widgets/SkeletonTheory';
 
 const Theory = ({ onShow, activeDrawer, quizError }) => {
     const { topic, bullets, loading, error } = useTopic();
@@ -12,7 +13,7 @@ const Theory = ({ onShow, activeDrawer, quizError }) => {
                 <p className="panel-topic">Topic: {topic}</p>
             </div>
 
-            {loading && <div className="panel-topic panel-message">Loading…</div>}
+            {loading && <SkeletonTheory />}
 
             {!loading && error && (
                 <EmptyState

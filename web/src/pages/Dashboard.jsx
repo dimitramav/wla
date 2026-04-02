@@ -7,6 +7,7 @@ import Footer from "../components/layout/Footer";
 import Progress from '../components/viewers/Progress';
 import Quiz from '../components/quiz/Quiz';
 import EmptyState from '../components/layout/widgets/EmptyState';
+import SkeletonDocuments from '../components/layout/widgets/SkeletonDocuments';
 import { FiFile, FiAlertCircle } from 'react-icons/fi';
 import { useTopic } from '../hooks/useTopic';
 import { useDocs } from '../hooks/useDocs';
@@ -68,7 +69,7 @@ const DashboardContent = () => {
                 </div>
                 <div className="documents-panel">
                     <div className="documents-grid">
-                        {docsLoading && <div className="panel-loading" />}
+                        {docsLoading && <SkeletonDocuments />}
                         {!docsLoading && docsError && (
                             <EmptyState
                                 icon={FiAlertCircle}
