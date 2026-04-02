@@ -1,4 +1,6 @@
+import { FiBookOpen, FiAlertCircle } from 'react-icons/fi';
 import { useTopic } from '../../hooks/useTopic';
+import EmptyState from '../layout/widgets/EmptyState';
 
 const Theory = ({ onShow, activeDrawer }) => {
     const { topic, bullets, loading, error } = useTopic();
@@ -11,7 +13,15 @@ const Theory = ({ onShow, activeDrawer }) => {
             </div>
 
             {loading && <div className="panel-topic panel-message">Loading…</div>}
-            {error && <div className="panel-topic panel-error">Failed to load.</div>}
+
+            {!loading && error && (
+                <EmptyState
+                    icon={FiAlertCircle}
+                    title="Failed to load"
+                    message="Unable to fetch theory content. Please try again."
+                    variant="error"
+                />
+            )}
 
             {!loading && !error && (
                 bullets?.length ? (
@@ -43,7 +53,12 @@ const Theory = ({ onShow, activeDrawer }) => {
                         })}
                     </ul>
                 ) : (
-                    <div className="panel-message">No summary available.</div>
+                    <EmptyState
+                        icon={FiBookOpen}
+                        title="No theory yet"
+                        message="Select a topic from the sidebar to see a summary here."
+                        variant="empty"
+                    />
                 )
             )}
 

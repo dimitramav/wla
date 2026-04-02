@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { useQuiz } from '../../hooks/useQuiz';
 
 import Loader from '../layout/widgets/Loader';
+import { FiHelpCircle, FiAlertCircle } from 'react-icons/fi';
+import EmptyState from '../layout/widgets/EmptyState';
 import Header from '../layout/Header';
 import QuizQuestion from './QuizQuestion';
 import QuizScore from './QuizScore';
@@ -25,9 +27,23 @@ const Quiz = ({ topic, docsetHash, userId, PASS_THRESHOLD, onShowProgress }) => 
     } = useQuiz(topic, docsetHash, userId);
     const [submitted, setSubmitted] = useState(false);
     console.log(weakKeywords)
-    if (error) return <div className="error">{error}</div>;
+    if (error) return (
+        <EmptyState
+            icon={FiAlertCircle}
+            title="Quiz not available"
+            message="Failed to load questions. Please try again."
+            variant="error"
+        />
+    );
     if (loading) return <Loader message="Preparing questions..." />;
-    if (questions.length === 0) return <Loader message="No questions available..." />;
+    if (questions.length === 0) return (
+        <EmptyState
+            icon={FiHelpCircle}
+            title="No questions"
+            message="No questions were loaded for this level. Try selecting a different topic or difficulty."
+            variant="empty"
+        />
+    );
     return (
         <div className="quiz-panel">
             <Header panel="quiz" title="Quiz" topic={topic} level={level} onLevelChange={handleLevelChange} selectLevel={submitted === false} subtitle={weakKeywords.join(", ")} />

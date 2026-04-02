@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { getDocs } from '../../api/docs';
 import { useTopic } from '../../hooks/useTopic';
-import { FiChevronLeft, FiChevronRight } from 'react-icons/fi';
+import { FiChevronLeft, FiChevronRight, FiFile, FiAlertCircle } from 'react-icons/fi';
+import EmptyState from '../layout/widgets/EmptyState';
 
 const SCROLL_AMOUNT = 240;
 
@@ -52,7 +53,22 @@ const DocumentList = ({ onSelect }) => {
     }, [docs]);
 
     if (loading) return <div className="panel-loading" />;
-    if (error || !docs.length) return null;
+    if (error) return (
+        <EmptyState
+            icon={FiAlertCircle}
+            title="Failed to load documents"
+            message="Unable to fetch documents for this topic."
+            variant="error"
+        />
+    );
+    if (!docs.length) return (
+        <EmptyState
+            icon={FiFile}
+            title="No documents"
+            message="No documents are available for this topic yet."
+            variant="empty"
+        />
+    );
 
     const scroll = (dir) => {
         rowRef.current?.scrollBy({ left: dir * SCROLL_AMOUNT, behavior: 'smooth' });

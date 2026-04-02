@@ -6,6 +6,8 @@ import { getProgress } from "../../api/progress";
 import Loader from "../layout/widgets/Loader";
 import Header from "../layout/Header";
 import { FaCheckCircle } from "react-icons/fa";
+import { FiBarChart2, FiAlertCircle } from 'react-icons/fi';
+import EmptyState from '../layout/widgets/EmptyState';
 
 const Progress = ({ topic, userId, PASS_THRESHOLD }) => {
     const [data, setData] = useState(null);
@@ -29,8 +31,23 @@ const Progress = ({ topic, userId, PASS_THRESHOLD }) => {
         if (topic && userId) fetchProgress();
     }, [topic, userId]);
 
-    if (error) return <div className="error">{error}</div>;
+    if (error) return (
+        <EmptyState
+            icon={FiAlertCircle}
+            title="Progress unavailable"
+            message="Failed to fetch progress data. Please try again."
+            variant="error"
+        />
+    );
     if (loading) return <Loader message="Calculating progress..." />;
+    if (!data || (data.perLevel?.length === 0 && data.unlockedLevel === 0)) return (
+        <EmptyState
+            icon={FiBarChart2}
+            title="No progress yet"
+            message="Complete a quiz to start tracking your progress here."
+            variant="empty"
+        />
+    );
 
     const unlockedLevel = data?.unlockedLevel ?? 0;
 
