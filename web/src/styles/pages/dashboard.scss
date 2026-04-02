@@ -3,8 +3,15 @@
 }
 
 @keyframes pulse-opacity {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.35; }
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.35;
+    }
 }
 
 .panel-loading {
@@ -18,14 +25,16 @@
 }
 
 @keyframes spin {
-    to { transform: rotate(360deg); }
+    to {
+        transform: rotate(360deg);
+    }
 }
 
 .dashboard-grid {
     display: grid;
     grid-template-columns: 15% 85%;
     grid-template-rows: 1fr 30px;
-    padding-right: 20px;
+    padding-right: $spacing-sm;
     height: inherit;
     overflow: hidden;
 
@@ -37,7 +46,7 @@
         .content-grid {
             display: grid;
             grid-template-columns: 60% 40%;
-            gap: $spacing-md;
+            gap: $spacing-sm;
             padding-left: $spacing-md;
             padding-right: $spacing-md;
             min-height: 0;
@@ -76,20 +85,18 @@
             }
 
             .documents-panel {
-                overflow: auto;
+                overflow: hidden;
                 height: inherit;
                 border-radius: $radius-xl;
                 box-shadow: $elevation-2;
                 background-color: #fff;
 
                 .documents-grid {
-                    display: grid;
-                    grid-template-columns: 20% 80%;
-                    height: inherit;
-
-                    .document-list {
-                        border-right: 1px solid $color-border;
-                    }
+                    display: flex;
+                    flex-direction: column;
+                    height: 100%;
+                    padding: $spacing-sm;
+                    gap: $spacing-xs;
                 }
             }
         }
