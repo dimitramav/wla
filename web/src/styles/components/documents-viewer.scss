@@ -1,27 +1,60 @@
-.document-tree {
+.doc-chip-scroller {
+    display: flex;
+    align-items: center;
+    gap: $spacing-xs;
+    flex-shrink: 0;
 
-    .node-label {
-        padding-bottom: 10px;
+    .chip-arrow {
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 28px;
+        height: 28px;
+        border: 1.5px solid $color-border;
+        border-radius: 50%;
+        background: #fff;
+        color: $color-text-secondary;
+        cursor: pointer;
+        transition: background 0.15s, color 0.15s;
+
+        &:hover {
+            background: $gray-500;
+            color: #fff;
+            border-color: $gray-500;
+        }
+    }
+}
+
+.doc-chip-row {
+    display: flex;
+    gap: $spacing-xs;
+    overflow-x: auto;
+    padding: $spacing-xs 0;
+    scrollbar-width: none;
+
+    &::-webkit-scrollbar {
+        display: none;
     }
 
-    .doc-node-button {
-        background: none;
-        border: none;
-        padding: 10px;
-        width: 100%;
-        text-align: left;
+    .doc-chip {
+        border: 1.5px solid $color-accent;
+        background: transparent;
+        color: $color-accent;
+        border-radius: 999px;
+        padding: $spacing-xs $spacing-md;
         cursor: pointer;
-        color: $text-primary;
-        border-radius: 4px 0px 0px 4px;
-
-        &:not(.selected):hover {
-            background-color: $accent-light;
-            border-left: 4px solid $accent;
-        }
+        white-space: nowrap;
+        font-size: 0.85rem;
+        transition: background 0.2s, color 0.2s;
 
         &.selected {
-            background-color: $accent;
-            color: white;
+            background: $color-accent;
+            color: #fff;
+        }
+
+        &:not(.selected):hover {
+            background: $color-accent-light;
         }
     }
 }
@@ -33,8 +66,10 @@
     flex-direction: column;
     justify-content: center;
     background-color: $bg-body;
-    height: 100%;
+    flex: 1;
+    min-height: 0;
     overflow: auto;
+    padding-bottom: $spacing-sm;
 
     .pdf-scroll {
         flex: 1;
