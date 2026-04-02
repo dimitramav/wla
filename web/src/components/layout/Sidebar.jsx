@@ -4,6 +4,11 @@ import logo from "../../assets/full-logo.png";
 const TOPIC_ITEMS = [
     { label: "School Anxiety", slug: "school_anxiety", available: true },
     { label: "Depression", slug: "depression", available: false },
+    { label: "ADHD", slug: "adhd", available: false },
+    { label: "Bullying", slug: "bullying", available: false },
+    { label: "Eating Disorders", slug: "eating_disorders", available: false },
+    { label: "Self-Harm", slug: "self_harm", available: false },
+    { label: "Grief and Loss", slug: "grief_loss", available: false },
 ];
 
 const Sidebar = () => {
