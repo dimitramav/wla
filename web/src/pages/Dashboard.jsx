@@ -15,7 +15,7 @@ import { TopicProvider } from '../context/TopicContext';
 import { useState } from 'react';
 
 const DashboardContent = () => {
-    const PASS_THRESHOLD = import.meta.env.PASS_THRESHOLD;
+    const PASS_THRESHOLD = Number(import.meta.env.VITE_PASS_THRESHOLD);
     const { topic, docsetHash, loading } = useTopic();
     const { docs, loading: docsLoading, error: docsError } = useDocs();
     const { user } = useAuth();
