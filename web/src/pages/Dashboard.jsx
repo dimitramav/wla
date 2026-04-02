@@ -28,16 +28,16 @@ const DashboardContent = () => {
             <div className="responsive-toggle">
                 <div className="toggle-inner">
                     <div className={`slider-highlight ${activeTab}`} />
-                    <button 
+                    <button
                         type="button"
-                        className={activeTab === 'learn' ? 'active' : ''} 
+                        className={activeTab === 'learn' ? 'active' : ''}
                         onClick={() => setActiveTab('learn')}
                     >
                         Learn
                     </button>
-                    <button 
+                    <button
                         type="button"
-                        className={activeTab === 'practice' ? 'active' : ''} 
+                        className={activeTab === 'practice' ? 'active' : ''}
                         onClick={() => setActiveTab('practice')}
                     >
                         Practice
@@ -45,9 +45,14 @@ const DashboardContent = () => {
                 </div>
             </div>
             <div className={`content-grid content-grid--${activeTab}`}>
-                <div className='tutors-panel'>
+                <div className={`tutors-panel${activeDrawer ? ' tutors-panel--drawer' : ''}`}>
                     {loading && <div className="panel-loading" />}
                     {!loading && <TheoryPanel onShow={handleShow} activeDrawer={activeDrawer} />}
+                    {activeDrawer && (
+                        <button className="back-to-theory btn btn-outline-accent" onClick={() => setActiveDrawer(null)}>
+                            ← Theory
+                        </button>
+                    )}
                     {activeDrawer === 'progress' && <div className='drawer-panel'><Progress topic={topic} userId={user?.id} PASS_THRESHOLD={PASS_THRESHOLD} /></div>}
                     {activeDrawer === 'quiz' && <div className='drawer-panel'><Quiz topic={topic} docsetHash={docsetHash} userId={user?.id} PASS_THRESHOLD={PASS_THRESHOLD} onShowProgress={() => setActiveDrawer("progress")} /></div>}
                 </div>

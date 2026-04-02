@@ -35,6 +35,10 @@
     display: none;
 }
 
+.back-to-theory {
+    display: none;
+}
+
 .dashboard-grid {
     display: grid;
     grid-template-columns: 15% 85%;
@@ -149,7 +153,7 @@
                 padding: 4px;
                 width: 220px;
                 height: 40px;
-                box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);
+                box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.05);
 
                 .slider-highlight {
                     position: absolute;
@@ -157,7 +161,7 @@
                     bottom: 4px;
                     left: 4px;
                     width: calc(50% - 4px);
-                    background: $color-primary;
+                    background: $color-accent;
                     border-radius: 999px;
                     transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.1); // Bouncy slider
                     box-shadow: 0 4px 10px rgba($color-primary, 0.4);
@@ -211,7 +215,35 @@
 
             &.content-grid--practice .tutors-panel {
                 display: flex;
-                overflow-y: auto;
+                height: 100%;
+                overflow: hidden;
+
+                // No drawer: theory fills the panel
+                .theory-panel {
+                    flex: 1;
+                    max-height: none;
+                    overflow-y: auto;
+                }
+
+                // Drawer open: hide theory, drawer fills
+                &.tutors-panel--drawer {
+                    .theory-panel {
+                        display: none;
+                    }
+
+                    .back-to-theory {
+                        display: block;
+                        align-self: flex-start;
+                        flex-shrink: 0;
+                    }
+
+                    .drawer-panel {
+                        flex: 1;
+                        height: auto;
+                        max-height: none;
+                        overflow-y: auto;
+                    }
+                }
             }
 
             &.content-grid--learn .documents-panel {

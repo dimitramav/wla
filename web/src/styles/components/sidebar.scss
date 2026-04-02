@@ -4,6 +4,7 @@
     @media (max-width: 1279px) {
         padding: $spacing-xs $spacing-md;
         border-bottom: 1px solid $color-border;
+        overflow: hidden;
 
 
         img {
@@ -40,6 +41,7 @@
     li {
         cursor: pointer;
         transition: transform 0.15s ease;
+        position: relative;
 
         .tab-inner {
             display: flex;
@@ -137,6 +139,8 @@
         padding-bottom: $spacing-lg;
         padding-left: $spacing-md;
         min-width: 100%;
+        flex-wrap: nowrap;
+
 
         // Hide scrollbar but keep scroll
         scrollbar-width: none;
