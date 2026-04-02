@@ -22,8 +22,14 @@ const DashboardContent = () => {
     const [selectedUrl, setSelectedUrl] = useState(null);
     const [activeDrawer, setActiveDrawer] = useState(null); // 'progress' | 'quiz' | null
     const [activeTab, setActiveTab] = useState('practice'); // 'learn' | 'practice'
+    const [quizError, setQuizError] = useState(false);
+    const [quizKey, setQuizKey] = useState(0);
 
-    const handleShow = (selectedDrawer) => setActiveDrawer(selectedDrawer);
+    const handleShow = (selectedDrawer) => {
+        if (selectedDrawer === 'quiz') setQuizKey(k => k + 1);
+        setActiveDrawer(selectedDrawer);
+        setQuizError(false);
+    };
 
     return (
         <div className="dashboard-grid">
@@ -51,14 +57,14 @@ const DashboardContent = () => {
             <div className={`content-grid content-grid--${activeTab}`}>
                 <div className={`tutors-panel${activeDrawer ? ' tutors-panel--drawer' : ''}`}>
                     {loading && <div className="panel-loading" />}
-                    {!loading && <TheoryPanel onShow={handleShow} activeDrawer={activeDrawer} />}
+                    {!loading && <TheoryPanel onShow={handleShow} activeDrawer={activeDrawer} quizError={quizError} />}
                     {activeDrawer && (
                         <button className="back-to-theory btn btn-outline-accent" onClick={() => setActiveDrawer(null)}>
                             ← Theory
                         </button>
                     )}
                     {activeDrawer === 'progress' && <div className='drawer-panel'><Progress topic={topic} userId={user?.id} PASS_THRESHOLD={PASS_THRESHOLD} /></div>}
-                    {activeDrawer === 'quiz' && <div className='drawer-panel'><Quiz topic={topic} docsetHash={docsetHash} userId={user?.id} PASS_THRESHOLD={PASS_THRESHOLD} onShowProgress={() => setActiveDrawer("progress")} /></div>}
+                    {activeDrawer === 'quiz' && <div className='drawer-panel'><Quiz key={quizKey} topic={topic} docsetHash={docsetHash} userId={user?.id} PASS_THRESHOLD={PASS_THRESHOLD} onShowProgress={() => setActiveDrawer("progress")} onError={() => setQuizError(true)} /></div>}
                 </div>
                 <div className="documents-panel">
                     <div className="documents-grid">

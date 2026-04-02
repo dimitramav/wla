@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuiz } from '../../hooks/useQuiz';
 
 import Loader from '../layout/widgets/Loader';
@@ -8,7 +8,7 @@ import Header from '../layout/Header';
 import QuizQuestion from './QuizQuestion';
 import QuizScore from './QuizScore';
 import { submitQuiz } from '../../api/quiz';
-const Quiz = ({ topic, docsetHash, userId, PASS_THRESHOLD, onShowProgress }) => {
+const Quiz = ({ topic, docsetHash, userId, PASS_THRESHOLD, onShowProgress, onError }) => {
 
     const {
         level,
@@ -27,6 +27,7 @@ const Quiz = ({ topic, docsetHash, userId, PASS_THRESHOLD, onShowProgress }) => 
     } = useQuiz(topic, docsetHash, userId);
     const [submitted, setSubmitted] = useState(false);
     console.log(weakKeywords)
+    useEffect(() => { if (error && onError) onError(); }, [error]);
     if (error) return (
         <EmptyState
             icon={FiAlertCircle}
