@@ -3,5 +3,30 @@
     flex-direction: row;
     justify-content: end;
     align-items: center;
+    gap: $spacing-sm;
+    padding: $spacing-xs $spacing-md;
+}
 
+.link {
+    cursor: pointer;
+    font-size: 0.875rem;
+    font-weight: 500;
+    padding: $spacing-xs $spacing-sm;
+    border-radius: $radius-sm;
+    transition: color $transition-fast, background-color $transition-fast;
+    user-select: none;
+    margin: 0;
+
+    &:hover {
+        background-color: rgba($color-text, 0.06);
+    }
+}
+
+.link-danger {
+    color: $color-error;
+
+    &:hover {
+        color: darken($color-error, 10%);
+        background-color: rgba($color-error, 0.08);
+    }
 }
