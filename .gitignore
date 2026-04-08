@@ -70,3 +70,4 @@ coverage/
 .claude/
 GEMINI.md
 CLAUDE.md
+/tmp/*
