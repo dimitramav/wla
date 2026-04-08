@@ -1,110 +1,89 @@
-# This file provides utilities for filtering and extracting relevant sections from research PDFs.
+# This file provides utilities for extracting text from documents (PDF, MD, TXT).
 #
 # Key Features:
-# - Identifies and trims front matter and tail sections of research papers.
-# - Uses heuristics to detect introduction and reference sections.
-# - Extracts and processes text from PDF files.
+# - Uses Docling (IBM) for ML-based PDF document understanding.
+# - Handles two-column layouts, tables, and academic paper structure.
+# - Reads .md and .txt files directly without conversion.
 #
 # Dependencies:
-# - PyPDF for reading and extracting text from PDFs.
-# - Regular expressions for pattern matching.
+# - Docling for PDF parsing and structure extraction.
 
-# Simple research-article filter: trims front matter and tail sections.
-# Works for most papers; later upgrade to GROBID/Docling for robust sectionization.
 import re
+import logging
 from pathlib import Path
-from typing import Optional, List, Dict, Any
-from pypdf import PdfReader
+from typing import Dict, Any
 
-START_HEADERS = [
-    r"^\s*(\d+(\.\d+)*)?\s*Introduction\b",
-    r"^\s*[IVX]+\.\s*Introduction\b",
-    r"^\s*Background\b",
-    r"^\s*(Materials\s+and\s+)?Methods\b",
-    r"^\s*Materials\s+and\s+Methods\b",
-    r"^\s*Methodology\b",
-]
-END_HEADERS = [
-    r"^\s*References\b",
-    r"^\s*Bibliography\b",
-    r"^\s*Acknowledge?ments?\b",
-    r"^\s*Appendix\b",
-    r"^\s*Supplementary\b",
-]
-FRONT_TOKENS = [
-    "doi:", "arxiv", "affiliations", "corresponding author", "@",
-    "creativecommons", "received", "accepted", "published", "rights reserved"
+from docling.document_converter import DocumentConverter
+
+logger = logging.getLogger(__name__)
+
+# Lazy-initialized converter (heavy object — load once)
+_converter = None
+
+def _get_converter() -> DocumentConverter:
+    global _converter
+    if _converter is None:
+        _converter = DocumentConverter()
+    return _converter
+
+# Regex patterns to trim references/bibliography from extracted text
+_END_PATTERNS = [
+    r"^#+\s*References\b",
+    r"^#+\s*Bibliography\b",
+    r"^References$",
+    r"^Bibliography$",
 ]
 
-# Read all pages from a PDF file
 
-def _read_pdf_pages(path: Path) -> List[str]:
-    reader = PdfReader(str(path))
-    out = []
-    for page in reader.pages:
+def _trim_references(text: str) -> str:
+    """Remove References/Bibliography section and everything after it."""
+    lines = text.split("\n")
+    for i, line in enumerate(lines):
+        for pat in _END_PATTERNS:
+            if re.search(pat, line.strip(), flags=re.IGNORECASE):
+                return "\n".join(lines[:i]).strip()
+    return text
+
+
+# Filter and extract text from a document (PDF, MD, or TXT)
+def filter_document(path: Path) -> Dict[str, Any]:
+    # For plain text and markdown files, read directly
+    if path.suffix.lower() in (".md", ".txt"):
         try:
-            txt = page.extract_text() or ""
+            text = path.read_text(encoding="utf-8").strip()
         except Exception:
-            txt = ""
-        out.append(txt.strip())
-    return out
+            text = ""
+        return {
+            "text": text,
+            "notes": "text_file",
+            "skipped_pages": [],
+            "preview": text[:500],
+        }
 
-# Check if text resembles front matter based on heuristics
-def _looks_like_front_matter(text: str) -> bool:
-    low = text.lower()
-    hits = sum(tok in low for tok in FRONT_TOKENS)
-    return hits >= 2 or len(text.split()) < 150
+    # PDF path — use Docling for ML-based extraction
+    try:
+        converter = _get_converter()
+        result = converter.convert(str(path))
+        md_text = result.document.export_to_markdown()
 
-# Find the index of a line matching any pattern
-def _find_index(lines: List[str], patterns: List[str]) -> Optional[int]:
-    for i, ln in enumerate(lines):
-        for pat in patterns:
-            if re.search(pat, ln, flags=re.IGNORECASE):
-                return i
-    return None
+        # Trim references section (not useful for question generation)
+        text = _trim_references(md_text).strip()
 
-# Filter and extract relevant sections from a research PDF
-def filter_research_pdf(path: Path) -> Dict[str, Any]:
-    pages = _read_pdf_pages(path)
-    if not pages:
-        return {"text": "", "notes": "no_pages", "skipped_pages": [], "preview": ""}
+        return {
+            "text": text,
+            "notes": "docling",
+            "skipped_pages": [],
+            "preview": text[:500],
+        }
+    except Exception as e:
+        logger.error(f"Docling failed for {path.name}: {e}")
+        return {
+            "text": "",
+            "notes": f"docling_error: {e}",
+            "skipped_pages": [],
+            "preview": "",
+        }
 
-    lines, line_page_idx = [], []
-    for pi, pg in enumerate(pages):
-        for ln in (pg.splitlines() or [""]):
-            lines.append(ln.strip())
-            line_page_idx.append(pi)
 
-    start_idx = _find_index(lines, START_HEADERS)
-    skipped_pages = []
-    if start_idx is None:
-        for i in range(min(3, len(pages))):
-            if _looks_like_front_matter(pages[i]):
-                skipped_pages.append(i)
-        if skipped_pages:
-            first_keep_page = max(skipped_pages) + 1
-            for i, pg in enumerate(line_page_idx):
-                if pg >= first_keep_page and lines[i]:
-                    start_idx = i
-                    break
-
-    end_idx = _find_index(lines, END_HEADERS)
-
-    if start_idx is None:
-        body = lines
-        note = "start=not_found"
-    else:
-        if end_idx is not None and end_idx > start_idx:
-            body = lines[start_idx:end_idx]
-            note = "start=ok;end=ok"
-        else:
-            body = lines[start_idx:]
-            note = "start=ok;end=not_found"
-
-    text = "\n".join(body).strip()
-    return {
-        "text": text,
-        "notes": note,
-        "skipped_pages": skipped_pages,
-        "preview": "\n".join(body[:10])
-    }
+# Backward-compatible alias
+filter_research_pdf = filter_document

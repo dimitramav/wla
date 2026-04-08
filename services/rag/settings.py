@@ -35,11 +35,20 @@ def write_docsets_meta(data: Dict[str, Any]) -> None:
 def get_topic_dir(topic: str) -> Path:
     return (CONTENT_DIR / topic).resolve()
 
-def collect_pdf_files(topic: str) -> List[Path]:
+def collect_documents(topic: str) -> List[Path]:
     root = get_topic_dir(topic)
     if not root.exists():
         return []
-    return sorted([p for p in root.rglob("*.pdf") if p.is_file()])
+    exts = ("*.pdf", "*.md", "*.txt")
+    files = []
+    for ext in exts:
+        for p in root.rglob(ext):
+            if p.is_file() and "pdfs_original" not in p.parts:
+                files.append(p)
+    return sorted(files, key=lambda p: p.name)
+
+# Backward-compatible alias
+collect_pdf_files = collect_documents
 
 def file_signature(p: Path) -> FileSig:
     st = p.stat()
