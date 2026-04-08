@@ -4,13 +4,13 @@
  * This file defines the ingestion logic for processing and storing document data for a specific topic in the RAG (Retrieval-Augmented Generation) system.
  *
  * Key Features:
- * - Collects and processes PDF files for a given topic.
+ * - Collects and processes PDF, Markdown, and text files for a given topic.
  * - Splits text into chunks and stores them in a vector store.
  * - Computes and updates metadata for document sets.
  *
  * Dependencies:
  * - ChromaDB for vector storage.
- * - PDF filtering and text splitting utilities.
+ * - Document filtering and text splitting utilities.
  * - Metadata management utilities.
 """
 
@@ -18,9 +18,9 @@ import hashlib, time
 from typing import Dict, Any, List
 from fastapi import HTTPException
 from .settings import (
-    collect_pdf_files, compute_docset_hash, read_docsets_meta, write_docsets_meta
+    collect_documents, compute_docset_hash, read_docsets_meta, write_docsets_meta
 )
-from .pdf_filter import filter_research_pdf
+from .pdf_filter import filter_document
 from .vecstore import make_splitter, collection_for
 
 # Ingest a topic into the vector store
@@ -47,12 +47,12 @@ from .vecstore import make_splitter, collection_for
  * - HTTPException (404): If no PDFs are found for the topic.
 """
 
-def ingest_topic(topic: str, force: bool = False) -> Dict[str, Any]:
-    pdfs = collect_pdf_files(topic)
-    if not pdfs:
-        raise HTTPException(status_code=404, detail=f"No PDFs found for topic '{topic}'")
+def ingest_topic(topic: str, force: bool = False, chunk_size: int = 800, chunk_overlap: int = 100) -> Dict[str, Any]:
+    docs_files = collect_documents(topic)
+    if not docs_files:
+        raise HTTPException(status_code=404, detail=f"No documents found for topic '{topic}'")
 
-    h = compute_docset_hash(pdfs)
+    h = compute_docset_hash(docs_files)
     meta = read_docsets_meta()
     prev = meta.get(topic)
 
@@ -71,11 +71,11 @@ def ingest_topic(topic: str, force: bool = False) -> Dict[str, Any]:
         client.delete_collection(col.name)
         col = client.get_or_create_collection(name=col.name, embedding_function=col._embedding_function)
 
-    splitter = make_splitter()
+    splitter = make_splitter(chunk_size=chunk_size, chunk_overlap=chunk_overlap)
     docs, metas, ids = [], [], []
 
-    for p in pdfs:
-        filt = filter_research_pdf(p)
+    for p in docs_files:
+        filt = filter_document(p)
         text = filt["text"]
         if not text:
             continue
@@ -97,7 +97,7 @@ def ingest_topic(topic: str, force: bool = False) -> Dict[str, Any]:
         # Embeddings are computed HERE by Chroma (via the embedding function)
         col.upsert(ids=ids, documents=docs, metadatas=metas)
 
-    files_meta = [{"name": p.name, "size": p.stat().st_size, "mtime": p.stat().st_mtime} for p in pdfs]
+    files_meta = [{"name": p.name, "size": p.stat().st_size, "mtime": p.stat().st_mtime} for p in docs_files]
     # Optionally store fresh count
     try:
         chunk_count = col.count()

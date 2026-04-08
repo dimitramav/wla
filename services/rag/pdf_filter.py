@@ -63,8 +63,22 @@ def _find_index(lines: List[str], patterns: List[str]) -> Optional[int]:
                 return i
     return None
 
-# Filter and extract relevant sections from a research PDF
-def filter_research_pdf(path: Path) -> Dict[str, Any]:
+# Filter and extract relevant sections from a document (PDF, MD, or TXT)
+def filter_document(path: Path) -> Dict[str, Any]:
+    # For plain text and markdown files, read directly — no PyPDF needed
+    if path.suffix.lower() in (".md", ".txt"):
+        try:
+            text = path.read_text(encoding="utf-8").strip()
+        except Exception:
+            text = ""
+        return {
+            "text": text,
+            "notes": "text_file",
+            "skipped_pages": [],
+            "preview": text[:500],
+        }
+
+    # PDF path — use existing heuristic filtering
     pages = _read_pdf_pages(path)
     if not pages:
         return {"text": "", "notes": "no_pages", "skipped_pages": [], "preview": ""}
@@ -108,3 +122,6 @@ def filter_research_pdf(path: Path) -> Dict[str, Any]:
         "skipped_pages": skipped_pages,
         "preview": "\n".join(body[:10])
     }
+
+# Backward-compatible alias
+filter_research_pdf = filter_document
