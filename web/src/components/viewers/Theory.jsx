@@ -47,7 +47,7 @@ const Theory = ({ onShow, activeDrawer, quizError }) => {
 
                             return (
                                 <li key={i} className="bullet main-bullet">
-                                    {trimmed}
+                                    {trimmed.replace(/^\d+\.\s*/, '')}
                                 </li>
                             );
                         })}

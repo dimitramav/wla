@@ -42,7 +42,9 @@ def collect_documents(topic: str) -> List[Path]:
     exts = ("*.pdf", "*.md", "*.txt")
     files = []
     for ext in exts:
-        files.extend(p for p in root.rglob(ext) if p.is_file())
+        for p in root.rglob(ext):
+            if p.is_file() and "pdfs_original" not in p.parts:
+                files.append(p)
     return sorted(files, key=lambda p: p.name)
 
 # Backward-compatible alias
