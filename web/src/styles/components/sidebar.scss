@@ -2,16 +2,22 @@
     width: 100%;
 
     @media (max-width: 1279px) {
-        padding: $spacing-xs $spacing-md;
         border-bottom: 1px solid $color-border;
         overflow: hidden;
 
 
         img {
             display: block;
-            width: 40% !important;
+            width: 25% !important;
             margin: auto;
             padding: 0 !important;
+        }
+    }
+
+    @media (max-width: 768px) {
+
+        img {
+            width: 40% !important;
         }
     }
 
@@ -128,7 +134,7 @@
             }
         }
 
-        h3 {
+        h4 {
 
             font-weight: inherit;
             white-space: nowrap;
@@ -141,8 +147,7 @@
         flex-direction: row;
         overflow-x: auto;
         gap: 8px;
-        padding-top: $spacing-xl;
-        padding-bottom: $spacing-lg;
+        padding-top: $spacing-md;
         padding-left: $spacing-md;
         min-width: 100%;
         flex-wrap: nowrap;

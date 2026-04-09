@@ -47,7 +47,7 @@ from .vecstore import make_splitter, collection_for
  * - HTTPException (404): If no PDFs are found for the topic.
 """
 
-def ingest_topic(topic: str, force: bool = False, chunk_size: int = 800, chunk_overlap: int = 100) -> Dict[str, Any]:
+def ingest_topic(topic: str, force: bool = False, chunk_size: int = 800, chunk_overlap: int = 100, emb_model: str = None) -> Dict[str, Any]:
     docs_files = collect_documents(topic)
     if not docs_files:
         raise HTTPException(status_code=404, detail=f"No documents found for topic '{topic}'")
@@ -61,15 +61,12 @@ def ingest_topic(topic: str, force: bool = False, chunk_size: int = 800, chunk_o
         return {"topic": topic, "docset_hash": h, "status": "unchanged",
                 "chunks_upserted": 0, "files": prev.get("files", [])}
 
-    col = collection_for(topic)
+    col = collection_for(topic, emb_model)
     # If changed, reset collection (cheap & predictable in prototypes)
     if prev and prev.get("hash") and prev["hash"] != h:
-        from chromadb import PersistentClient
-        from chromadb.config import Settings
-        # Drop and recreate
         client = col._client  # internal, but fine for prototype
         client.delete_collection(col.name)
-        col = client.get_or_create_collection(name=col.name, embedding_function=col._embedding_function)
+        col = collection_for(topic, emb_model)
 
     splitter = make_splitter(chunk_size=chunk_size, chunk_overlap=chunk_overlap)
     docs, metas, ids = [], [], []

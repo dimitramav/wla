@@ -33,7 +33,7 @@ const Sidebar = () => {
                         onClick={() => item.available && setTopic(item.slug)}
                     >
                         <div className="tab-inner">
-                            <h3>{item.label}</h3>
+                            <h4>{item.label}</h4>
                         </div>
                     </li>
                 ))}

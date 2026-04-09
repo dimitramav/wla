@@ -45,9 +45,18 @@ def delete_collection(name: str):
     except ValueError:  # Collection doesn't exist
         return False
 
+
+def collection_name_for(topic: str, emb_model: str = None) -> str:
+    """Compute ChromaDB collection name, namespaced by model for non-default models."""
+    model = emb_model or EMB_MODEL_ID
+    if model != EMB_MODEL_ID:
+        slug = model.split("/")[-1].replace("-", "_").replace(".", "_")[:24]
+        return f"{topic}__{slug}"
+    return topic
+
+
 # Retrieve or create a collection for a topic
-def collection_for(topic: str):
-    return _client.get_or_create_collection(
-        name=f"{topic}",
-        embedding_function=emb_fn
-)
+def collection_for(topic: str, emb_model: str = None):
+    fn = embedding_functions.SentenceTransformerEmbeddingFunction(model_name=emb_model) if emb_model else emb_fn
+    name = collection_name_for(topic, emb_model)
+    return _client.get_or_create_collection(name=name, embedding_function=fn)
