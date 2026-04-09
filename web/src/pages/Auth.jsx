@@ -1,5 +1,5 @@
 import { useState } from "react";
-import logo from "../assets/full-logo.png";
+import logo from "../assets/wla-logo.png";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from '../context/AuthContext';
 
@@ -59,7 +59,6 @@ const Auth = () => {
                 </div>
                 <div className="auth-form-wrapper">
                     <form className="auth-form" onSubmit={handleSubmit}>
-                        <img src={logo} />
                         <div>
                             <label className="label" htmlFor="auth-email">Email</label>
                             <input

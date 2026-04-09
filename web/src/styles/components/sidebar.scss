@@ -10,7 +10,7 @@
         img {
             display: block;
             width: 40% !important;
-            margin: 0 auto $spacing-sm !important;
+            margin: auto;
             padding: 0 !important;
         }
     }
@@ -20,7 +20,6 @@
         max-width: inherit;
         object-fit: contain;
         display: block;
-        margin: 0 auto $spacing-xl;
         padding: $spacing-md;
 
 
