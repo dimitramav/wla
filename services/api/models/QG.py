@@ -15,6 +15,7 @@ class QGRequest(BaseModel):
     difficulty_profile: dict
     weak_keywords: Optional[List[str]]
     weak_focus_ratio: float = 0.4
+    retrieval_type: Literal["dense", "hybrid"] = "hybrid"
 
 class Question(BaseModel):
     id: str

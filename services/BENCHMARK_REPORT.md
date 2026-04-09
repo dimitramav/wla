@@ -22,7 +22,7 @@ This produces **12 configurations**, each evaluated against **10 manually curate
 
 ### Golden questions
 
-Each golden question was written by referencing specific passages in the ingested PDF corpus (Anna Freud National Centre guides, Schlesier et al. 2023, Johnson et al. 2023). Questions are paired with ground-truth answers drawn directly from those passages, and tagged with taxonomy keywords from the platform's difficulty hierarchy. This ensures the benchmark measures whether the system retrieves the *specific chunks that contain the answer*, not whether it retrieves generically related content.
+The golden question set consists of 10 questions curated by the researcher from the ingested PDF corpus. Initial drafts were generated with AI assistance; each question and its ground-truth answer were then individually verified by the researcher against the cited source passage to ensure factual accuracy and source traceability. Questions span both document types in the corpus — practitioner guides (Anna Freud National Centre) and peer-reviewed research papers (Schlesier et al. 2023, Johnson et al. 2023) — to ensure retrieval quality is evaluated across the heterogeneous writing styles present in the corpus (see "Why retrieval configuration is non-trivial" in `methodology_hybrid_search.md`). Each question is tagged with taxonomy keywords from the platform's difficulty hierarchy. This ensures the benchmark measures whether the system retrieves the *specific chunks that contain the answer*, not whether it retrieves generically related content.
 
 ### Metrics
 

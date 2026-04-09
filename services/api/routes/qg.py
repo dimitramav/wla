@@ -22,6 +22,7 @@ def qg(req: QGRequest, topic: str = Query(...)):
             weak_keywords=req.weak_keywords,
             weak_focus_ratio=req.weak_focus_ratio,
             difficulty_profile=req.difficulty_profile,
+            retrieval_type=req.retrieval_type,
         )
     except json.JSONDecodeError:
         raise HTTPException(status_code=500, detail="LLM generated malformed JSON.")
