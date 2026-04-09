@@ -7,15 +7,25 @@
 # - Generates questions using an LLM (Large Language Model).
 
 import json
+from pathlib import Path
+from datetime import datetime, timezone
 from typing import List, Dict, Tuple, Optional
 from .vecstore import collection_for
 from llm.prompts import SYSTEM_QG, USER_QG_MC_TEMPLATE, USER_QG_YN_TEMPLATE
 from llm.client import generate_json, prompt_hash
 from dataclasses import dataclass
-from .settings import  EMB_MODEL_ID
+from .settings import EMB_MODEL_ID
 from chromadb.utils import embedding_functions
 import numpy as np
 import heapq
+
+try:
+    from rank_bm25 import BM25Okapi
+    _BM25_AVAILABLE = True
+except ImportError:
+    _BM25_AVAILABLE = False
+
+RETRIEVAL_LOG = Path(__file__).parent.parent / "retrieval_logs.jsonl"
 
 # Configuration
 MAX_CHARS_PER_Q = 450
@@ -70,7 +80,7 @@ def _ordered_chunks(col, topic: str, docset_hash: str) -> List[Tuple[str, Dict]]
     pairs.sort(key=lambda x: (
         x[1].get("source", ""),
         x[1].get("page", 0),
-        x[1].get("chunk_idx", 0)
+        x[1].get("chunk_index", x[1].get("chunk_idx", 0))
     ))
     return pairs[:POOL_TOP]
 
@@ -84,6 +94,130 @@ def _trim(text: str, n: int = MAX_CHARS_PER_Q) -> str:
 # Compute cosine similarity between two vectors
 def _cosine_similarity(a: np.ndarray, b: np.ndarray) -> float:
     return np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b) + 1e-8)
+
+
+def _get_emb_fn(model: str = None):
+    """Return embedding function for the given model, or the module-level default."""
+    if model and model != EMB_MODEL_ID:
+        return embedding_functions.SentenceTransformerEmbeddingFunction(model_name=model)
+    return emb_fn
+
+
+def _write_retrieval_log(
+    topic: str,
+    keyword_group: str,
+    plan: List[Tuple[str, Dict, Optional[str]]],
+    scores: List[float],
+    retrieval_type: str,
+) -> None:
+    """Append a retrieval record line-by-line to retrieval_logs.jsonl."""
+    record = {
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "topic": topic,
+        "keyword_group": keyword_group,
+        "retrieval_type": retrieval_type,
+        "chunks": [
+            {
+                "chunk_id": f"{meta.get('source', '')}-c{meta.get('chunk_index', meta.get('chunk_idx', 0))}",
+                "source": meta.get("source", ""),
+                "score": scores[i] if i < len(scores) else None,
+                "text_preview": txt[:120],
+            }
+            for i, (txt, meta, _) in enumerate(plan)
+        ],
+    }
+    try:
+        with RETRIEVAL_LOG.open("a", encoding="utf-8") as f:
+            f.write(json.dumps(record) + "\n")
+    except Exception:
+        pass  # Non-critical: logging must not break question generation
+
+
+def _pick_plan_by_keywords_hybrid(
+    pool: List[Tuple[str, Dict]],
+    keywords: List[str],
+    needed: int,
+    retrieval_type: str = "dense",
+    _emb_fn=None,
+) -> Tuple[List[Tuple[str, Dict, Optional[str]]], List[float]]:
+    """Select chunks using dense-only or hybrid (dense + BM25 + RRF) retrieval.
+
+    Dense path: ranks chunks by max cosine similarity across keywords.
+    Hybrid path: merges dense ranks and BM25 sparse ranks via Reciprocal Rank Fusion
+                 (Cormack et al., SIGIR 2009) using k=60.
+
+    Returns (plan, scores) where plan is List[(text, meta, matched_kw)]
+    and scores are the final relevance scores per chunk.
+    """
+    local_fn = _emb_fn or emb_fn
+
+    if not keywords:
+        return [(txt, meta, None) for txt, meta in pool[:needed]], [0.0] * min(needed, len(pool))
+
+    chunk_texts = [txt for txt, _ in pool]
+    n = len(chunk_texts)
+
+    # --- Dense retrieval ---
+    kw_vecs = [local_fn(kw)[0] for kw in keywords]
+    chunk_vecs = [local_fn(txt)[0] for txt in chunk_texts]
+
+    best_dense = np.zeros(n)
+    best_kw = [None] * n
+    for kw_idx, kw_vec in enumerate(kw_vecs):
+        for ci, cv in enumerate(chunk_vecs):
+            s = _cosine_similarity(np.array(kw_vec), np.array(cv))
+            if s > best_dense[ci]:
+                best_dense[ci] = s
+                best_kw[ci] = keywords[kw_idx]
+
+    dense_order = list(np.argsort(-best_dense))
+    dense_rank = {int(i): r for r, i in enumerate(dense_order)}
+
+    # --- Sparse retrieval: BM25 + RRF merge ---
+    if retrieval_type == "hybrid" and _BM25_AVAILABLE and n > 0:
+        try:
+            tokenized = [t.lower().split() for t in chunk_texts]
+            bm25 = BM25Okapi(tokenized)
+            query_tokens = " ".join(keywords).lower().split()
+            bm25_raw = bm25.get_scores(query_tokens)
+            sparse_order = list(np.argsort(-bm25_raw))
+            sparse_rank = {int(i): r for r, i in enumerate(sparse_order)}
+
+            k = 60  # standard RRF constant (Cormack et al., 2009)
+            final_scores = [
+                1.0 / (k + dense_rank.get(i, n)) + 1.0 / (k + sparse_rank.get(i, n))
+                for i in range(n)
+            ]
+        except Exception:
+            final_scores = list(best_dense)
+    else:
+        final_scores = list(best_dense)
+
+    final_order = sorted(range(n), key=lambda i: -final_scores[i])
+
+    # Build plan, de-duplicating by chunk index
+    plan_with_scores, selected = [], set()
+    for ci in final_order:
+        if len(plan_with_scores) >= needed:
+            break
+        if ci in selected:
+            continue
+        selected.add(ci)
+        txt, meta = pool[ci]
+        plan_with_scores.append((txt, meta, best_kw[ci], float(final_scores[ci])))
+
+    # Backfill if fewer chunks than needed
+    for i, (txt, meta) in enumerate(pool):
+        if len(plan_with_scores) >= needed:
+            break
+        if i not in selected:
+            plan_with_scores.append((txt, meta, None, 0.0))
+            selected.add(i)
+
+    result = plan_with_scores[:needed]
+    plan = [(txt, meta, kw) for txt, meta, kw, _ in result]
+    scores = [s for _, _, _, s in result]
+    return plan, scores
 
 # Select chunks most similar to keywords
 #
@@ -208,7 +342,7 @@ def _create_question_object(
             "doc": meta.get("source", ""),
             "page_from": meta.get("page", 0),
             "page_to": meta.get("page", 0),
-            "chunk_id": f"{meta.get('source', '')}-p{meta.get('page', 0)}-c{meta.get('chunk_idx', 0)}"
+            "chunk_id": f"{meta.get('source', '')}-p{meta.get('page', 0)}-c{meta.get('chunk_index', meta.get('chunk_idx', 0))}"
         }]
     }
 
@@ -221,14 +355,17 @@ def generate_qg(
     keywords: List[str],
     weak_keywords: Optional[List[str]],
     weak_focus_ratio: float = 0.65,
-    difficulty_profile: Dict = {}
+    difficulty_profile: Dict = {},
+    retrieval_type: str = "dense",
+    emb_model: str = None,
 ) -> Dict:
     """Generate questions for a topic"""
     print(f"Generating QG for topic={topic} hash={docset_hash} with weak keywords={weak_keywords} and mix={mix}")
     # Convert seed string to integer using hash
     seed_int = hash(seed)
-    
-    col = collection_for(topic)
+
+    _fn = _get_emb_fn(emb_model)
+    col = collection_for(topic, emb_model)
     pool = _ordered_chunks(col, topic, docset_hash)
     if not pool:
         return {"questions": [], "promptHash": ""}
@@ -237,16 +374,23 @@ def generate_qg(
     yn_n = int(mix.get("yesno", 5))
     questions = []
 
-    # Generate all questions
     # Split questions between weak and normal keywords
     total_questions = mcq_n + yn_n
     weak_focus_questions = int(total_questions * weak_focus_ratio)
     normal_questions = total_questions - weak_focus_questions
-    
-    # Get plans for both weak and strong keywords
-    weak_plan = _pick_plan_by_keywords(pool, weak_keywords or [], weak_focus_questions)
+
+    # Retrieve chunks for weak keywords, log results
+    weak_plan, weak_scores = _pick_plan_by_keywords_hybrid(
+        pool, weak_keywords or [], weak_focus_questions, retrieval_type, _fn
+    )
+    _write_retrieval_log(topic, "weak_keywords", weak_plan, weak_scores, retrieval_type)
+
+    # Retrieve chunks for strong keywords, log results
     strong_keywords = list(set(keywords) - set(weak_keywords or []))
-    strong_plan = _pick_plan_by_keywords(pool, strong_keywords, normal_questions)
+    strong_plan, strong_scores = _pick_plan_by_keywords_hybrid(
+        pool, strong_keywords, normal_questions, retrieval_type, _fn
+    )
+    _write_retrieval_log(topic, "strong_keywords", strong_plan, strong_scores, retrieval_type)
 
     # Combine plans
     plan = weak_plan + strong_plan
