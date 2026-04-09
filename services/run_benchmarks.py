@@ -154,6 +154,7 @@ def _build_ragas_llm():
         llm = ChatOllama(
             model="mistral:7b-instruct-q4_0",
             base_url="http://localhost:11434",
+            timeout=300,
         )
         return LangchainLLMWrapper(llm)
     except Exception as e:
@@ -161,40 +162,47 @@ def _build_ragas_llm():
         return None
 
 
-def evaluate_with_ragas(
-    question: str,
-    contexts: list,
-    ground_truth: str,
+def evaluate_batch_with_ragas(
+    questions: list,
+    contexts_list: list,
+    ground_truths: list,
     ragas_llm=None,
-) -> dict:
-    """Score retrieved contexts with RAGAS context_relevancy.
+) -> list:
+    """Score a batch of retrieved context sets with RAGAS context_precision.
 
-    context_relevancy asks: 'Do the retrieved chunks contain knowledge
-    relevant to answering this question?' — it does not evaluate whether
-    a quiz question was generated well.
+    Batches all questions for a config into a single Ollama call instead of
+    one call per question — ~10x faster than individual evaluation.
 
-    Returns {"context_relevancy": float | None}.
+    Returns list of {"context_relevancy": float | None}, one per question.
     """
+    n = len(questions)
     try:
         from datasets import Dataset
         from ragas import evaluate as ragas_evaluate
-        from ragas.metrics import context_relevancy
+        from ragas.metrics import context_precision
+        from ragas.run_config import RunConfig
 
         if ragas_llm is not None:
-            context_relevancy.llm = ragas_llm
+            context_precision.llm = ragas_llm
+
+        # Ollama serves one request at a time — sequential evaluation
+        # prevents 9/10 jobs timing out from concurrent queuing.
+        run_cfg = RunConfig(max_workers=1, timeout=300)
 
         data = {
-            "question": [question],
-            "contexts": [contexts],
-            "answer": [""],
-            "ground_truths": [[ground_truth]],
+            "question": questions,
+            "contexts": contexts_list,
+            "answer": [""] * n,
+            "ground_truth": ground_truths,  # singular, non-deprecated form
         }
         dataset = Dataset.from_dict(data)
-        result = ragas_evaluate(dataset, metrics=[context_relevancy])
-        return {"context_relevancy": float(result["context_relevancy"])}
+        result = ragas_evaluate(dataset, metrics=[context_precision],
+                                run_config=run_cfg)
+        df = result.to_pandas()
+        return [{"context_relevancy": float(v)} for v in df["context_precision"]]
     except Exception as e:
-        print(f"    [RAGAS skipped: {type(e).__name__}: {e}]")
-        return {"context_relevancy": None}
+        print(f"  [RAGAS batch skipped: {type(e).__name__}: {e}]")
+        return [{"context_relevancy": None}] * n
 
 
 # ---------------------------------------------------------------------------
@@ -257,6 +265,10 @@ def run_benchmarks():
                 config_num += 1
                 print(f"\n  [{config_num}/{total_configs}] retrieval={retrieval_type}")
 
+                # --- Retrieve for all questions first ---
+                batch_questions, batch_contexts, batch_ground_truths = [], [], []
+                batch_rows = []
+
                 for item in GOLDEN_QUESTIONS:
                     question = item["question"]
                     ground_truth = item["ground_truth"]
@@ -270,19 +282,16 @@ def run_benchmarks():
                             retrieval_type=retrieval_type,
                             _emb_fn=_fn,
                         )
-
                         contexts = [txt for txt, _, _ in plan]
                         top_score = round(max(scores), 4) if scores else None
-
-                        ragas_scores = evaluate_with_ragas(
-                            question, contexts, ground_truth, ragas_llm
-                        )
                     except Exception as e:
-                        print(f"    ERROR: {e}")
+                        print(f"    Retrieval ERROR: {e}")
                         contexts, top_score = [], None
-                        ragas_scores = {"context_relevancy": None}
 
-                    row = {
+                    batch_questions.append(question)
+                    batch_contexts.append(contexts)
+                    batch_ground_truths.append(ground_truth)
+                    batch_rows.append({
                         "timestamp": datetime.now(timezone.utc).isoformat(),
                         "emb_model": emb_model,
                         "chunk_size": chunk_size,
@@ -292,10 +301,19 @@ def run_benchmarks():
                         "keywords_used": "|".join(keywords),
                         "contexts_retrieved": len(contexts),
                         "top_score": top_score,
-                        "context_relevancy": ragas_scores.get("context_relevancy"),
-                    }
-                    results.append(row)
-                    print(f"    ✓ {question[:60]}...")
+                        "context_relevancy": None,
+                    })
+
+                # --- RAGAS: one batch call per config ---
+                print(f"    Running RAGAS batch ({len(batch_questions)} questions)...")
+                ragas_batch = evaluate_batch_with_ragas(
+                    batch_questions, batch_contexts, batch_ground_truths, ragas_llm
+                )
+                for i, row in enumerate(batch_rows):
+                    row["context_relevancy"] = ragas_batch[i].get("context_relevancy")
+                    print(f"    ✓ [{i+1}/10] score={row['top_score']}  ragas={row['context_relevancy']}")
+
+                results.extend(batch_rows)
 
     # Write CSV
     print(f"\n{'=' * 60}")

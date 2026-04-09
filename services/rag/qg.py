@@ -204,7 +204,9 @@ def _pick_plan_by_keywords_hybrid(
             continue
         selected.add(ci)
         txt, meta = pool[ci]
-        plan_with_scores.append((txt, meta, best_kw[ci], float(final_scores[ci])))
+        # Always store cosine similarity as the score (not RRF) — RRF is
+        # only used for ordering. This keeps scores comparable across retrieval types.
+        plan_with_scores.append((txt, meta, best_kw[ci], float(best_dense[ci])))
 
     # Backfill if fewer chunks than needed
     for i, (txt, meta) in enumerate(pool):
