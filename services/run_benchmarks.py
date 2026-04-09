@@ -43,8 +43,10 @@ sys.path.insert(0, str(Path(__file__).parent))
 #   - Paired with retrieval keywords (matching the taxonomy in keywords.yaml)
 #     that the system would use to find relevant chunks
 #
-# These questions are manually written — not AI-generated — to avoid the
-# circularity of evaluating LLM retrieval with LLM-generated queries.
+# Questions were drafted with AI assistance and then curated by the researcher:
+# each question and ground-truth answer was verified against the cited PDF
+# passage to ensure factual accuracy, source traceability, and coverage of
+# both practitioner guides and academic papers in the corpus.
 # ---------------------------------------------------------------------------
 GOLDEN_QUESTIONS = [
     {
