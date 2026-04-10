@@ -78,7 +78,7 @@ The project includes a benchmarking suite that evaluates retrieval quality acros
 
 ```bash
 cd services
-python -u run_benchmarks.py
+python -m benchmarks.rag_benchmark
 ```
 
 This evaluates **12 configurations** (3 embedding models x 2 chunk sizes x 2 retrieval strategies) against 10 manually curated, corpus-grounded golden questions. Each configuration is scored using:
@@ -86,7 +86,7 @@ This evaluates **12 configurations** (3 embedding models x 2 chunk sizes x 2 ret
 - **Cosine similarity** — how semantically similar the retrieved chunk is to the query
 - **RAGAS context_precision** — whether the retrieved chunk actually contains the answer (LLM-judged)
 
-Results are written to `services/benchmark_results.csv` (120 rows). A detailed analysis is available in `services/BENCHMARK_REPORT.md`.
+Results are written to `services/benchmarks/results/` (120 rows). A detailed analysis is available in `services/benchmarks/RAG_BENCHMARK_REPORT.md`.
 
 ### Configurations tested
 

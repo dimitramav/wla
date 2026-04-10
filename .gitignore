@@ -58,6 +58,9 @@ content/**/*.PDF
 !.vscode/settings.json
 !.vscode/extensions.json
 
+# Benchmark results (generated output)
+services/benchmarks/results/*.csv
+
 # Coverage / tooling
 coverage/
 .coverage*

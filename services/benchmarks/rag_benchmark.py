@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-RAG pipeline benchmarking script for Watch-Listen-Act.
+RAG retrieval benchmarking script for Watch-Listen-Act.
 
 Tests all combinations of embedding model x chunking strategy x retrieval type
 against a manually curated golden question set grounded in the corpus documents.
@@ -13,11 +13,11 @@ What this evaluates:
   which directly affects quiz question quality for teacher training.
 
 Outputs:
-  services/benchmark_results.csv  — one row per question per configuration
-  services/retrieval_logs.jsonl   — per-query chunk retrieval trace (appended)
+  services/benchmarks/results/rag_YYYYMMDD_HHMMSS.csv — one row per question per configuration
+  services/retrieval_logs.jsonl              — per-query chunk retrieval trace (appended)
 
 Usage:
-  cd services && python run_benchmarks.py
+  cd services && python -m benchmarks.rag_benchmark
 
 Requirements:
   - All services/requirements.txt dependencies installed in the active venv
@@ -31,7 +31,7 @@ from pathlib import Path
 from datetime import datetime, timezone
 
 # Allow direct imports from the services/ package
-sys.path.insert(0, str(Path(__file__).parent))
+sys.path.insert(0, str(Path(__file__).parent.parent))
 
 # ---------------------------------------------------------------------------
 # Golden question set
@@ -128,15 +128,16 @@ CHUNK_CONFIGS = [
 RETRIEVAL_TYPES = ["dense", "hybrid"]
 
 TOPIC = "school_anxiety"
-OUTPUT_CSV = Path(__file__).parent / "benchmark_results.csv"
+RESULTS_DIR = Path(__file__).parent / "results"
 
 CSV_FIELDS = [
-    "timestamp",
+    "config_id",
     "emb_model",
     "chunk_size",
     "chunk_overlap",
     "retrieval_type",
     "question",
+    "ground_truth",
     "keywords_used",
     "contexts_retrieved",
     "top_score",
@@ -217,7 +218,7 @@ def run_benchmarks():
     from rag.qg import _ordered_chunks, _pick_plan_by_keywords_hybrid, _get_emb_fn
 
     print("=" * 60)
-    print("WLA RAG Benchmarking Suite")
+    print("WLA RAG Retrieval Benchmarking Suite")
     print(f"Topic       : {TOPIC}")
     print(f"Questions   : {len(GOLDEN_QUESTIONS)} (manually curated, corpus-grounded)")
     print(f"Configs     : {len(EMBEDDING_MODELS)} models x {len(CHUNK_CONFIGS)} chunk sizes x {len(RETRIEVAL_TYPES)} retrieval types")
@@ -265,6 +266,7 @@ def run_benchmarks():
 
             for retrieval_type in RETRIEVAL_TYPES:
                 config_num += 1
+                config_id = f"{model_label}_{chunk_size}_{chunk_overlap}_{retrieval_type}"
                 print(f"\n  [{config_num}/{total_configs}] retrieval={retrieval_type}")
 
                 # --- Retrieve for all questions first ---
@@ -294,14 +296,15 @@ def run_benchmarks():
                     batch_contexts.append(contexts)
                     batch_ground_truths.append(ground_truth)
                     batch_rows.append({
-                        "timestamp": datetime.now(timezone.utc).isoformat(),
+                        "config_id": config_id,
                         "emb_model": emb_model,
                         "chunk_size": chunk_size,
                         "chunk_overlap": chunk_overlap,
                         "retrieval_type": retrieval_type,
                         "question": question,
+                        "ground_truth": ground_truth,
                         "keywords_used": "|".join(keywords),
-                        "contexts_retrieved": len(contexts),
+                        "contexts_retrieved": "|".join(contexts),
                         "top_score": top_score,
                         "context_relevancy": None,
                     })
@@ -317,14 +320,17 @@ def run_benchmarks():
 
                 results.extend(batch_rows)
 
-    # Write CSV
+    # Write CSV with timestamped filename
     print(f"\n{'=' * 60}")
     if results:
-        with open(OUTPUT_CSV, "w", newline="", encoding="utf-8") as f:
+        RESULTS_DIR.mkdir(parents=True, exist_ok=True)
+        ts = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+        output_csv = RESULTS_DIR / f"rag_{ts}.csv"
+        with open(output_csv, "w", newline="", encoding="utf-8") as f:
             writer = csv.DictWriter(f, fieldnames=CSV_FIELDS)
             writer.writeheader()
             writer.writerows(results)
-        print(f"Results written to {OUTPUT_CSV}  ({len(results)} rows)")
+        print(f"Results written to {output_csv}  ({len(results)} rows)")
     else:
         print("No results to write — check ingestion errors above.")
 
