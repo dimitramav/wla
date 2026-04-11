@@ -13,4 +13,5 @@ docling>=2.0
 rank_bm25>=0.2.2
 ragas>=0.1.0,<0.2
 langchain-community>=0.2.0,<1
-langchain-groq>=0.1.0,<1
+# 1.0.x is the last series compatible with langchain-core <0.3 (required by ragas 0.1.x)
+langchain-google-genai>=1.0,<1.1
