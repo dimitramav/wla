@@ -3,9 +3,7 @@ from typing import List, Optional, Literal
 
 class SourceSpan(BaseModel):
     doc: str
-    page_from: int
-    page_to: int
-    chunk_id: str
+    text: str = ""
 
 class QGRequest(BaseModel):
     hash: str

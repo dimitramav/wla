@@ -7,6 +7,7 @@
 # - Generates questions using an LLM (Large Language Model).
 
 import json
+import re
 from pathlib import Path
 from datetime import datetime, timezone
 from typing import List, Dict, Tuple, Optional
@@ -29,7 +30,8 @@ RETRIEVAL_LOG = Path(__file__).parent.parent / "retrieval_logs.jsonl"
 
 # Configuration
 MAX_CHARS_PER_Q = 450
-POOL_TOP = 24
+POOL_PER_SOURCE = 30
+POOL_MIN = 200
 MAX_RETRIES = 2
 
 emb_fn = embedding_functions.SentenceTransformerEmbeddingFunction(
@@ -69,20 +71,43 @@ YN_TEMPLATE = QuestionTemplate(
 )
 
 def _ordered_chunks(col, topic: str, docset_hash: str) -> List[Tuple[str, Dict]]:
-    """Returns stably-ordered list of (text, meta) filtered by topic+hash"""
+    """Returns (text, meta) pairs round-robin across sources.
+
+    Each source contributes its chunks in (page, chunk_index) order; sources
+    are cycled so every document in the docset is represented before any one
+    document exhausts the pool budget. The pool budget scales with the number
+    of sources (POOL_PER_SOURCE per doc, floored at POOL_MIN) so retrieval
+    can reach the body of each document, not just the abstract/intro.
+    """
     records = col.get(
         where={"$and": [{"topic": topic}, {"docset_hash": docset_hash}]},
         include=["documents", "metadatas"]
     )
     docs = records.get("documents", []) or []
     metas = records.get("metadatas", []) or []
-    pairs = list(zip(docs, metas))
-    pairs.sort(key=lambda x: (
-        x[1].get("source", ""),
-        x[1].get("page", 0),
-        x[1].get("chunk_index", x[1].get("chunk_idx", 0))
-    ))
-    return pairs[:POOL_TOP]
+
+    by_source: Dict[str, List[Tuple[str, Dict]]] = {}
+    for txt, meta in zip(docs, metas):
+        by_source.setdefault(meta.get("source", ""), []).append((txt, meta))
+
+    for src in by_source:
+        by_source[src].sort(key=lambda x: (
+            x[1].get("page", 0),
+            x[1].get("chunk_index", x[1].get("chunk_idx", 0))
+        ))
+
+    sources = sorted(by_source.keys())
+    pool_budget = max(POOL_MIN, POOL_PER_SOURCE * len(sources))
+    pool: List[Tuple[str, Dict]] = []
+    idx = 0
+    while len(pool) < pool_budget and any(idx < len(by_source[s]) for s in sources):
+        for src in sources:
+            if idx < len(by_source[src]):
+                pool.append(by_source[src][idx])
+                if len(pool) >= pool_budget:
+                    break
+        idx += 1
+    return pool
 
 # Trim text to a specified number of characters
 def _trim(text: str, n: int = MAX_CHARS_PER_Q) -> str:
@@ -195,18 +220,38 @@ def _pick_plan_by_keywords_hybrid(
 
     final_order = sorted(range(n), key=lambda i: -final_scores[i])
 
-    # Build plan, de-duplicating by chunk index
+    # Per-source cap: prevent any single document (typically its abstract)
+    # from swallowing the plan. ceil(needed / num_sources_in_pool), floored at 1.
+    sources_in_pool = {pool[i][1].get("source", "") for i in range(n)}
+    max_per_source = max(1, -(-needed // max(1, len(sources_in_pool))))
+
     plan_with_scores, selected = [], set()
+    per_source: Dict[str, int] = {}
     for ci in final_order:
         if len(plan_with_scores) >= needed:
             break
         if ci in selected:
             continue
+        src = pool[ci][1].get("source", "")
+        if per_source.get(src, 0) >= max_per_source:
+            continue
         selected.add(ci)
+        per_source[src] = per_source.get(src, 0) + 1
         txt, meta = pool[ci]
         # Always store cosine similarity as the score (not RRF) — RRF is
         # only used for ordering. This keeps scores comparable across retrieval types.
         plan_with_scores.append((txt, meta, best_kw[ci], float(best_dense[ci])))
+
+    # Second pass: relax the cap if the capped pass left us short
+    if len(plan_with_scores) < needed:
+        for ci in final_order:
+            if len(plan_with_scores) >= needed:
+                break
+            if ci in selected:
+                continue
+            selected.add(ci)
+            txt, meta = pool[ci]
+            plan_with_scores.append((txt, meta, best_kw[ci], float(best_dense[ci])))
 
     # Backfill if fewer chunks than needed
     for i, (txt, meta) in enumerate(pool):
@@ -311,9 +356,10 @@ def _generate_question(
                 "kind": template.kind,
                 "text": text,
                 "options": template.options if template.kind == "yesno" else out.get("options", template.options),
-                "correct": "Yes" if template.kind == "yesno" and correct.lower().startswith("y") else 
+                "correct": "Yes" if template.kind == "yesno" and correct.lower().startswith("y") else
                           "No" if template.kind == "yesno" else correct,
-                "why": out.get("why", "Grounded in the excerpt.")
+                "why": out.get("why", "Grounded in the excerpt."),
+                "evidence": str(out.get("evidence", "")).strip(),
             }
 
     # Default fallback
@@ -322,16 +368,19 @@ def _generate_question(
         "text": template.default_text,
         "options": template.options,
         "correct": template.default_correct,
-        "why": "Grounded in the excerpt."
+        "why": "Grounded in the excerpt.",
+        "evidence": "",
     }
 
 def _create_question_object(
     q: Dict,
     qid: str,
     keyword: Optional[str],
-    meta: Dict
+    meta: Dict,
+    chunk_text: str = ""
 ) -> Dict:
     """Create standardized question object"""
+    search_excerpt = re.sub(r'[#*>\[\]]', '', chunk_text).strip()
     return {
         "id": qid,
         "kind": q["kind"],
@@ -342,9 +391,7 @@ def _create_question_object(
         "keywords": [keyword] if keyword else [],
         "source_spans": [{
             "doc": meta.get("source", ""),
-            "page_from": meta.get("page", 0),
-            "page_to": meta.get("page", 0),
-            "chunk_id": f"{meta.get('source', '')}-p{meta.get('page', 0)}-c{meta.get('chunk_index', meta.get('chunk_idx', 0))}"
+            "text": search_excerpt,
         }]
     }
 
@@ -405,7 +452,7 @@ def generate_qg(
         
         q = _generate_question(excerpt, seed_int + i, assigned_kw, MCQ_TEMPLATE, difficulty_profile)
         qid = f"q-{topic}-{docset_hash[:6]}-mcq-{i+1}"
-        questions.append(_create_question_object(q, qid, assigned_kw, meta))
+        questions.append(_create_question_object(q, qid, assigned_kw, meta, text))
 
     # Yes/No
     for j in range(min(yn_n, max(0, len(plan) - mcq_n))):
@@ -415,7 +462,7 @@ def generate_qg(
         
         q = _generate_question(excerpt, seed_int + 100 + j, assigned_kw, YN_TEMPLATE, difficulty_profile)
         qid = f"q-{topic}-{docset_hash[:6]}-yn-{j+1}"
-        questions.append(_create_question_object(q, qid, assigned_kw, meta))
+        questions.append(_create_question_object(q, qid, assigned_kw, meta, text))
 
     demo_user = "\n\n".join(_trim(p[0], 200) for p in pool[:8])
     return {

@@ -25,33 +25,39 @@ const Theory = ({ onShow, activeDrawer, quizError }) => {
 
             {!loading && !error && (
                 bullets?.length ? (
-                    <ul className="bullet-list">
-                        {bullets.map((b, i) => {
-                            const trimmed = b.trim();
-
-                            if (trimmed.startsWith('+')) {
-                                return (
-                                    <li key={i} className="bullet sub-bullet">
-                                        {trimmed.substring(1).trim()}
-                                    </li>
-                                );
+                    (() => {
+                        const groups = [];
+                        bullets.forEach((b) => {
+                            const t = b.trim();
+                            if (t.startsWith('+')) {
+                                if (groups.length) groups[groups.length - 1].subs.push(t.substring(1).trim());
+                            } else {
+                                const text = t.startsWith('*') ? t.substring(1).trim() : t.replace(/^\d+\.\s*/, '');
+                                groups.push({ text, subs: [] });
                             }
-
-                            if (trimmed.startsWith('*')) {
-                                return (
-                                    <li key={i} className="bullet main-bullet">
-                                        {trimmed.substring(1).trim()}
-                                    </li>
-                                );
-                            }
-
-                            return (
-                                <li key={i} className="bullet main-bullet">
-                                    {trimmed.replace(/^\d+\.\s*/, '')}
-                                </li>
-                            );
-                        })}
-                    </ul>
+                        });
+                        return (
+                            <div className="theory-cards">
+                                {groups.map((g, i) => (
+                                    <article
+                                        key={i}
+                                        className="theory-card"
+                                        style={{ animationDelay: `${i * 60}ms` }}
+                                    >
+                                        <span className="theory-card__index">{i + 1}</span>
+                                        <div className="theory-card__body">
+                                            <h4 className="theory-card__title">{g.text}</h4>
+                                            {g.subs.length > 0 && (
+                                                <ul className="theory-card__subs">
+                                                    {g.subs.map((s, j) => <li key={j}>{s}</li>)}
+                                                </ul>
+                                            )}
+                                        </div>
+                                    </article>
+                                ))}
+                            </div>
+                        );
+                    })()
                 ) : (
                     <EmptyState
                         icon={FiBookOpen}
@@ -62,14 +68,16 @@ const Theory = ({ onShow, activeDrawer, quizError }) => {
                 )
             )}
 
-            <div className="panel-buttons">
-                <button className="btn btn-outline-primary" disabled={activeDrawer === 'quiz' && !quizError} onClick={onShow.bind(this, 'progress')}><p>
-                    Show Progress</p>
-                </button>
-                <button className="btn btn-outline-primary" disabled={activeDrawer === 'quiz' && !quizError} onClick={onShow.bind(this, 'quiz')}><p>
-                    Start Quiz</p>
-                </button>
-            </div>
+            {!loading && !error && bullets?.length > 0 && (
+                <div className="panel-buttons">
+                    <button className="btn btn-outline-primary" disabled={activeDrawer === 'quiz' && !quizError} onClick={onShow.bind(this, 'progress')}><p>
+                        Show Progress</p>
+                    </button>
+                    <button className="btn btn-outline-primary" disabled={activeDrawer === 'quiz' && !quizError} onClick={onShow.bind(this, 'quiz')}><p>
+                        Start Quiz</p>
+                    </button>
+                </div>
+            )}
         </div>
     );
 };

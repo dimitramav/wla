@@ -31,6 +31,7 @@ Rules:
 - Options must be short and plausible; exactly 4 options labeled A) B) C) D).
 - Exactly ONE correct answer; respond with letter only in "correct".
 - "why" must be a complete sentence, max 140 characters, grounded in the excerpt.
+- "evidence" must be a single contiguous sentence copied VERBATIM from the excerpt (no paraphrasing, no added words, no ellipses), 20–240 characters, that a reader can point to as the justification for the correct answer.
 - You are part of a set of questions where approximately {application_share}% should involve applying the concept, not just recalling facts.
 
 Difficulty Settings (use these to guide tone and depth):
@@ -45,7 +46,8 @@ Return JSON:
   "text": "...",
   "options": ["A) ...","B) ...","C) ...","D) ..."],
   "correct": "A"|"B"|"C"|"D",
-  "why": "..."
+  "why": "...",
+  "evidence": "..."
 }}"""
 
 # One Yes/No from a single excerpt.
@@ -65,6 +67,7 @@ Rules:
 - Statement must be verifiably True or False from the excerpt only.
 - options must be exactly ["Yes","No"].
 - "why" must be a complete sentence, max 100 characters, grounded in the excerpt.
+- "evidence" must be a single contiguous sentence copied VERBATIM from the excerpt (no paraphrasing, no added words, no ellipses), 20–240 characters, that a reader can point to as the justification for the correct answer.
 - You are part of a set of questions where approximately {application_share}% should involve applying the concept, not just recalling facts.
 
 Difficulty Settings (use these to guide tone and depth):
@@ -78,5 +81,6 @@ Return JSON:
   "text": "...",
   "options": ["Yes","No"],
   "correct": "Yes"|"No",
-  "why": "..."
+  "why": "...",
+  "evidence": "..."
 }}"""

@@ -1,6 +1,7 @@
+import { FiX } from "react-icons/fi";
 import { useProfile } from "../../hooks/useProfile";
 import { useAuth } from "../../context/AuthContext";
-const Header = ({ title, panel, topic, level = 1, onLevelChange = () => { }, subtitle = "", selectLevel = false }) => {
+const Header = ({ title, panel, topic, level = 1, onLevelChange = () => { }, subtitle = "", selectLevel = false, onClose }) => {
     const { user } = useAuth();
     const { unlockedLevel } = useProfile(topic, user?.id);
     return (
@@ -25,6 +26,11 @@ const Header = ({ title, panel, topic, level = 1, onLevelChange = () => { }, sub
                         </select>
                     </div>
                 )) : (<p className="panel-topic">Topic: {topic}</p>
+            )}
+            {onClose && (
+                <button type="button" className="header-close" aria-label="Close" onClick={onClose}>
+                    <FiX />
+                </button>
             )}
         </div>
     );

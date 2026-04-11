@@ -76,6 +76,11 @@
                             &:not(.selected):hover {
                                 background-color: rgba($color-accent, 0.06);
                             }
+
+                            &.selected {
+                                background-color: rgba($color-accent, 0.12);
+                                font-weight: 500;
+                            }
                         }
                     }
 
@@ -211,8 +216,45 @@
                 color: $text-secondary;
                 display: flex;
                 flex-direction: row;
+                align-items: flex-start;
                 justify-content: space-between;
+                gap: 12px;
 
+                .why-text {
+                    flex: 1 1 auto;
+                    min-width: 0;
+                    overflow-wrap: anywhere;
+                }
+            }
+
+            .btn-view-source {
+                display: inline-flex;
+                align-items: center;
+                gap: 6px;
+                flex-shrink: 0;
+                padding: 4px 10px;
+                font-size: 0.78rem;
+                font-weight: 500;
+                color: $secondary-dark;
+                background: $secondary-light;
+                border: 1px solid $secondary;
+                border-radius: 4px;
+                cursor: pointer;
+                transition: background-color 0.15s ease, color 0.15s ease;
+                white-space: nowrap;
+
+                &:hover {
+                    background: $secondary;
+                    color: #fff;
+                }
+
+                svg {
+                    font-size: 0.9rem;
+                }
+            }
+
+            .q-tags {
+                margin-top: 6px;
             }
         }
 

@@ -3,9 +3,7 @@ import mongoose from "mongoose";
 
 const SourceSpan = new mongoose.Schema({
     doc: String,
-    page_from: Number,
-    page_to: Number,
-    chunk_id: String,
+    text: String,
 }, { _id: false });
 
 const Question = new mongoose.Schema({

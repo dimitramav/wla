@@ -1,9 +1,10 @@
 
 import { useEffect } from "react";
 import { FaCheckCircle, FaTimesCircle } from "react-icons/fa";
+import { FiBookOpen } from "react-icons/fi";
 const PASS_THRESHOLD = import.meta.env.PASS_THRESHOLD;
 
-const QuizScore = ({ questions, answers, level, onNewQuiz, onShowProgress, keywords }) => {
+const QuizScore = ({ questions, answers, level, onNewQuiz, onShowProgress, keywords, onViewSource }) => {
     const results = questions.map(q => {
         const userAnswer = answers[q.id];
         const isCorrect = userAnswer && q.correct && userAnswer.charAt(0) === q.correct.charAt(0); return {
@@ -38,18 +39,29 @@ const QuizScore = ({ questions, answers, level, onNewQuiz, onShowProgress, keywo
                         </div>
                         <div className="score-answers">
                             <div className={q.isCorrect ? "pass" : "fail"}><strong>Your answer:</strong> {q.userAnswer}</div>
-                            {!q.isCorrect &&
-
-                                <div><strong>Correct answer:</strong> {q.correct}</div>}
+                            {!q.isCorrect && (
+                                <div><strong>Correct answer:</strong> {q.correct}</div>
+                            )}
                             <div className="score-why">
-                                {!q.isCorrect ? <span><strong>Why:</strong> {q.why}</span> : <span></span>}
-                                {Array.isArray(q.keywords) && q.keywords.length > 0 && (
-                                    <div className="q-tags">
-                                        {q.keywords.map((kw, j) => (
-                                            <span key={j} className="q-tag">{kw}</span>
-                                        ))}
-                                    </div>
-                                )}</div>
+                                <span className="why-text">
+                                    {!q.isCorrect && <><strong>Why:</strong> {q.why}</>}
+                                </span>
+                                {q.source_spans?.[0]?.text && onViewSource && (
+                                    <button
+                                        className="btn-view-source"
+                                        onClick={() => onViewSource(q.source_spans[0].doc, q.source_spans[0].text)}
+                                    >
+                                        <FiBookOpen /> View Source
+                                    </button>
+                                )}
+                            </div>
+                            {Array.isArray(q.keywords) && q.keywords.length > 0 && (
+                                <div className="q-tags">
+                                    {q.keywords.map((kw, j) => (
+                                        <span key={j} className="q-tag">{kw}</span>
+                                    ))}
+                                </div>
+                            )}
                         </div>
                     </div>
                 ))}

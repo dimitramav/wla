@@ -9,7 +9,7 @@ import { FaCheckCircle } from "react-icons/fa";
 import { FiBarChart2, FiAlertCircle } from 'react-icons/fi';
 import EmptyState from '../layout/widgets/EmptyState';
 
-const Progress = ({ topic, userId, PASS_THRESHOLD }) => {
+const Progress = ({ topic, userId, PASS_THRESHOLD, onClose }) => {
     const [data, setData] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -94,7 +94,7 @@ const Progress = ({ topic, userId, PASS_THRESHOLD }) => {
 
     return (
         <div className="progress-panel">
-            <Header title="Progress" panel="progress" topic={topic} />
+            <Header title="Progress" panel="progress" topic={topic} onClose={onClose} />
             <div className="progress-grid">
                 {perLevel.map((lv) => {
                     const isUnlocked = lv.level <= unlockedLevel;
