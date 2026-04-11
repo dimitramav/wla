@@ -33,62 +33,21 @@ from datetime import datetime, timezone
 # Allow direct imports from the services/ package
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from benchmarks.benchmark_data import GOLDEN_QUESTIONS
-
-# ---------------------------------------------------------------------------
-# Benchmark configuration matrix
-# ---------------------------------------------------------------------------
-EMBEDDING_MODELS = [
-    "sentence-transformers/all-MiniLM-L6-v2",   # baseline
-    "sentence-transformers/all-mpnet-base-v2",
-    "BAAI/bge-small-en-v1.5",
-]
-
-CHUNK_CONFIGS = [
-    (512, 50),
-    (800, 100),
-]
-
-RETRIEVAL_TYPES = ["dense", "hybrid"]
-
-TOPIC = "school_anxiety"
-RESULTS_DIR = Path(__file__).parent / "results"
-
-CSV_FIELDS = [
-    "timestamp",
-    "emb_model",
-    "chunk_size",
-    "chunk_overlap",
-    "retrieval_type",
-    "question",
-    "ground_truth",
-    "keywords_used",
-    "num_contexts",
-    "contexts_text",
-    "top_score",
-    "context_relevancy",
-]
+from benchmarks.config import (
+    CHUNK_CONFIGS,
+    EMBEDDING_MODELS,
+    RAG_CSV_FIELDS,
+    RETRIEVAL_TYPES,
+    TOPIC,
+)
+from benchmarks.fixtures import GOLDEN_QUESTIONS
+from benchmarks.io import RESULTS_DIR
+from benchmarks.scoring.judge import build_ollama_judge
 
 
 # ---------------------------------------------------------------------------
 # RAGAS evaluation
 # ---------------------------------------------------------------------------
-
-def _build_ragas_llm():
-    """Try to build a LangChain Ollama wrapper for RAGAS. Returns None on failure."""
-    try:
-        from langchain_community.chat_models import ChatOllama
-        from ragas.llms import LangchainLLMWrapper
-        llm = ChatOllama(
-            model="mistral:7b-instruct-q4_0",
-            base_url="http://localhost:11434",
-            timeout=300,
-        )
-        return LangchainLLMWrapper(llm)
-    except Exception as e:
-        print(f"  [RAGAS LLM setup failed: {e}]")
-        return None
-
 
 def evaluate_batch_with_ragas(
     questions: list,
@@ -150,7 +109,7 @@ def run_benchmarks():
     print(f"Total rows  : {len(GOLDEN_QUESTIONS) * len(EMBEDDING_MODELS) * len(CHUNK_CONFIGS) * len(RETRIEVAL_TYPES)}")
     print("=" * 60)
 
-    ragas_llm = _build_ragas_llm()
+    ragas_llm = build_ollama_judge()
     if ragas_llm:
         print("RAGAS: Ollama configured (mistral:7b-instruct-q4_0)")
     else:
@@ -253,7 +212,7 @@ def run_benchmarks():
         ts = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
         output_csv = RESULTS_DIR / f"rag_{ts}.csv"
         with open(output_csv, "w", newline="", encoding="utf-8") as f:
-            writer = csv.DictWriter(f, fieldnames=CSV_FIELDS)
+            writer = csv.DictWriter(f, fieldnames=RAG_CSV_FIELDS)
             writer.writeheader()
             writer.writerows(results)
         print(f"Results written to {output_csv}  ({len(results)} rows)")

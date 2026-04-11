@@ -21,10 +21,10 @@ identified by Kurdi et al. (2020) in their systematic review of automatic
 question generation for educational purposes.
 
 Usage:
-  cd services && python -m benchmarks.rescore_mcq_rubric \\
+  cd services && python -m benchmarks.investigations.rescore_mcq_rubric \\
       --llm-csv results/llm_20260410_191454.csv \\
       --rag-csv results/rag_20260410_160216.csv
-  cd services && python -m benchmarks.rescore_mcq_rubric \\
+  cd services && python -m benchmarks.investigations.rescore_mcq_rubric \\
       --llm-csv results/llm_20260410_191454.csv \\
       --rag-csv results/rag_20260410_160216.csv \\
       --limit 10
@@ -37,16 +37,16 @@ import sys
 import time
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).parent.parent))
+sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 from dotenv import load_dotenv
 
-load_dotenv(Path(__file__).parent.parent.parent / ".env")
+load_dotenv(Path(__file__).parent.parent.parent.parent / ".env")
 
-from benchmarks import rubric
-from benchmarks.llm_benchmark import extract_json
-
-RESULTS_DIR = Path(__file__).parent / "results"
+from benchmarks.io import RESULTS_DIR
+from benchmarks.parsing import extract_json
+from benchmarks.scoring import rubric
+from benchmarks.scoring.composite import composite_score
 
 
 def build_judge():
@@ -149,7 +149,7 @@ def rescore(llm_csv: Path, rag_csv: Path, out_csv: Path, limit: int | None = Non
                 out["distractor_plausibility"] = scores["distractor_plausibility"]
                 out["pedagogical_appropriateness"] = scores["pedagogical_appropriateness"]
                 out["mcq_quality"] = scores["mcq_quality"]
-                out["composite_score_v2"] = rubric.composite_score(
+                out["composite_score_v2"] = composite_score(
                     _fnum(r.get("faithfulness")),
                     _fnum(r.get("context_relevancy")),
                     scores["mcq_quality"],

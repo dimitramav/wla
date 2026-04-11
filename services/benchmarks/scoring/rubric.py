@@ -59,7 +59,8 @@ def parse_mcq(parsed: dict | None) -> dict | None:
     """Normalise a parsed LLM output dict into an MCQ structure.
 
     Accepts the already-extracted JSON dict (produced by
-    llm_benchmark.extract_json). Returns None if the structure is malformed.
+    benchmarks.parsing.extract_json). Returns None if the structure is
+    malformed.
     """
     if not isinstance(parsed, dict):
         return None
@@ -135,21 +136,3 @@ def score_mcq(llm, mcq: dict, context: list[str]) -> dict | None:
                 return None
             time.sleep(2)
     return None
-
-
-def composite_score(faithfulness, context_relevancy, mcq_quality, format_compliance):
-    """Weighted composite v2: 0.4 faith + 0.3 ctx + 0.2 mcq_quality + 0.1 fmt.
-
-    Replaces the v1 formula that used answer_relevancy at 0.1 and
-    context_relevancy at 0.4 (see LLM_BENCHMARK_REPORT.md Finding 5).
-    """
-    vals = [faithfulness, context_relevancy, mcq_quality, format_compliance]
-    if any(v is None for v in vals):
-        return None
-    return round(
-        (faithfulness * 0.4)
-        + (context_relevancy * 0.3)
-        + (mcq_quality * 0.2)
-        + (format_compliance * 0.1),
-        4,
-    )

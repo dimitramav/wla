@@ -1,26 +1,19 @@
 """
-Shared benchmark fixtures: golden questions and generator models.
+Golden question fixture for the benchmark pipelines.
 
-Both the RAG retrieval benchmark and the LLM generation benchmark import
-from this module so that the question set and the model list stay in sync
-across the two pipelines.
+Each question is:
+  - Grounded in specific content from the corpus documents
+  - Paired with the corpus source it comes from (for traceability)
+  - Paired with a ground truth drawn from that document's actual content
+  - Paired with retrieval keywords (matching the taxonomy in keywords.yaml)
+    that the system would use to find relevant chunks
+
+Questions were drafted with AI assistance and then curated by the researcher:
+each question and ground-truth answer was verified against the cited PDF
+passage to ensure factual accuracy, source traceability, and coverage of
+both practitioner guides and academic papers in the corpus.
 """
 
-# ---------------------------------------------------------------------------
-# Golden question set
-#
-# Each question is:
-#   - Grounded in specific content from the corpus documents
-#   - Paired with the corpus source it comes from (for traceability)
-#   - Paired with a ground truth drawn from that document's actual content
-#   - Paired with retrieval keywords (matching the taxonomy in keywords.yaml)
-#     that the system would use to find relevant chunks
-#
-# Questions were drafted with AI assistance and then curated by the researcher:
-# each question and ground-truth answer was verified against the cited PDF
-# passage to ensure factual accuracy, source traceability, and coverage of
-# both practitioner guides and academic papers in the corpus.
-# ---------------------------------------------------------------------------
 GOLDEN_QUESTIONS = [
     {
         # Source: annafreud_seven_ways_support_worried.pdf (Ways 1 & 3)
@@ -82,67 +75,4 @@ GOLDEN_QUESTIONS = [
         "ground_truth": "Research shows these three constructs are interconnected. Bullying victimisation can trigger school anxiety, and school anxiety in turn predicts absenteeism. Gender and grade level moderate these relationships in secondary school students.",
         "keywords": ["peer aggression", "social evaluation fears", "attendance tracking"],
     },
-]
-
-
-# ---------------------------------------------------------------------------
-# Generator models — all local Ollama, Q4_0 quantized
-#
-# Pulled/removed sequentially during a benchmark run to keep disk usage
-# bounded.
-# ---------------------------------------------------------------------------
-GENERATOR_MODELS = [
-    {
-        "name": "mistral-7b",
-        "tag": "mistral:7b-instruct-q4_0",
-        "pull_needed": True,
-    },
-    {
-        "name": "llama3.1-8b",
-        "tag": "llama3.1:8b-instruct-q4_0",
-        "pull_needed": True,
-    },
-    {
-        "name": "gemma2-9b",
-        "tag": "gemma2:9b-instruct-q4_0",
-        "pull_needed": True,
-    },
-    {
-        "name": "phi3.5-3.8b",
-        "tag": "phi3.5:3.8b-mini-instruct-q4_0",
-        "pull_needed": True,
-    },
-]
-
-
-# ---------------------------------------------------------------------------
-# LLM benchmark CSV schema
-#
-# Shared by llm_benchmark.py (online scoring) and llm_ragas_score.py
-# (offline rescoring) so the two stay in sync.
-#
-# `answer_relevancy` is retained for backward-compat with pre-Finding-5
-# runs; it is no longer computed or used in the composite score.
-# ---------------------------------------------------------------------------
-LLM_CSV_FIELDS = [
-    "timestamp",
-    "generator_model",
-    "emb_model",
-    "chunk_size",
-    "chunk_overlap",
-    "retrieval_type",
-    "question",
-    "ground_truth",
-    "format_compliance",
-    "response_time_s",
-    "raw_output",
-    "generated_answer",
-    "faithfulness",
-    "answer_relevancy",
-    "stem_clarity",
-    "distractor_plausibility",
-    "pedagogical_appropriateness",
-    "mcq_quality",
-    "context_relevancy",
-    "composite_score",
 ]

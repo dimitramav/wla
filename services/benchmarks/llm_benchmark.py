@@ -27,9 +27,7 @@ Requirements:
 """
 
 import csv
-import json
 import os
-import re
 import subprocess
 import sys
 import time
@@ -42,11 +40,15 @@ from dotenv import load_dotenv
 
 load_dotenv(Path(__file__).parent.parent.parent / ".env")
 
-from benchmarks.benchmark_data import GENERATOR_MODELS, LLM_CSV_FIELDS as CSV_FIELDS
+from benchmarks.config import GENERATOR_MODELS, LLM_CSV_FIELDS
+from benchmarks.io import RESULTS_DIR, find_latest_csv, load_csv
+from benchmarks.parsing import extract_json, validate_format
+from benchmarks.scoring import rubric
+from benchmarks.scoring.composite import composite_score
+from benchmarks.scoring.judge import build_gemini_judge
 from llm.prompts import SYSTEM_QG as SYSTEM_PROMPT
 
 OLLAMA_URL = os.getenv("LLM_URL", "http://localhost:11434")
-RESULTS_DIR = Path(__file__).parent / "results"
 
 # ---------------------------------------------------------------------------
 # Prompt template — system prompt is imported from production (llm.prompts).
@@ -76,8 +78,6 @@ Return JSON:
   "correct": "A"|"B"|"C"|"D",
   "why": "..."
 }}"""
-
-REQUIRED_KEYS = {"text", "options", "correct", "why"}
 
 # ---------------------------------------------------------------------------
 # Ollama model management (pull/rm for disk space)
@@ -141,86 +141,9 @@ def generate_question(model_tag: str, contexts: list[str]) -> tuple[str, float]:
     return raw, round(latency, 2)
 
 
-def extract_json(text: str):
-    """Extract first JSON object from LLM output (matches production client.py logic)."""
-    text = text.strip()
-    text = re.sub(r"^```(?:json)?\s*", "", text)
-    text = re.sub(r"\s*```$", "", text)
-
-    try:
-        return json.loads(text)
-    except json.JSONDecodeError:
-        pass
-
-    for m in re.finditer(r"[\{]", text):
-        start = m.start()
-        for end in range(len(text), start, -1):
-            try:
-                return json.loads(text[start:end])
-            except json.JSONDecodeError:
-                continue
-    return None
-
-
-def validate_format(parsed) -> float:
-    """Check JSON has required keys. Returns 1.0 (valid) or 0.0 (invalid)."""
-    if not isinstance(parsed, dict):
-        return 0.0
-    if not REQUIRED_KEYS.issubset(parsed.keys()):
-        return 0.0
-    if not isinstance(parsed.get("options"), list) or len(parsed["options"]) != 4:
-        return 0.0
-    if parsed.get("correct") not in ("A", "B", "C", "D"):
-        return 0.0
-    return 1.0
-
-
 # ---------------------------------------------------------------------------
 # RAGAS evaluation with Gemini judge
 # ---------------------------------------------------------------------------
-
-def build_gemini_judge():
-    """Build Google Gemini 2.5 Flash Lite wrapper for RAGAS evaluation."""
-    api_key = os.getenv("GOOGLE_API_KEY")
-    if not api_key:
-        print("  ⚠ GOOGLE_API_KEY not set — RAGAS faithfulness/answer_relevancy will be None")
-        return None
-
-    try:
-        from langchain_google_genai import ChatGoogleGenerativeAI
-        from ragas.llms import LangchainLLMWrapper
-
-        llm = ChatGoogleGenerativeAI(
-            model="gemini-2.5-flash-lite",
-            google_api_key=api_key,
-            temperature=0.0,
-            max_retries=3,
-        )
-
-        # langchain-google-genai 1.0.x rejects `temperature` as a per-call kwarg,
-        # but ragas 0.1.x passes it through. Drop it — temperature is set at init.
-        class _GeminiJudge(LangchainLLMWrapper):
-            def generate_text(self, prompt, n=1, temperature=None, stop=None, callbacks=None):
-                result = self.langchain_llm.generate_prompt(
-                    prompts=[prompt] * n, stop=stop, callbacks=callbacks,
-                )
-                if n > 1:
-                    result.generations = [[g[0] for g in result.generations]]
-                return result
-
-            async def agenerate_text(self, prompt, n=1, temperature=None, stop=None, callbacks=None):
-                result = await self.langchain_llm.agenerate_prompt(
-                    prompts=[prompt] * n, stop=stop, callbacks=callbacks,
-                )
-                if n > 1:
-                    result.generations = [[g[0] for g in result.generations]]
-                return result
-
-        return _GeminiJudge(llm)
-    except Exception as e:
-        print(f"  ⚠ Gemini judge setup failed: {e}")
-        return None
-
 
 def evaluate_with_ragas(rows: list, judge_llm) -> list[dict]:
     """Evaluate faithfulness for generated answers.
@@ -234,7 +157,7 @@ def evaluate_with_ragas(rows: list, judge_llm) -> list[dict]:
     Finding 4 showed it was a weak discriminator on MCQ-generation tasks.
     The column is still written (as None for new runs) for backward-compat
     with older CSVs. MCQ-side quality is now captured by the rubric metric
-    (see benchmarks/rubric.py and Finding 5).
+    (see benchmarks/scoring/rubric.py and Finding 5).
     """
     n = len(rows)
     if judge_llm is None:
@@ -308,8 +231,6 @@ def evaluate_with_rubric(rows: list, judge_llm) -> list[dict]:
     "pedagogical_appropriateness", "mcq_quality"} dicts (or all-None on
     failure / unparseable MCQ).
     """
-    from benchmarks import rubric
-
     n = len(rows)
     empty = {
         "stem_clarity": None,
@@ -337,70 +258,12 @@ def evaluate_with_rubric(rows: list, judge_llm) -> list[dict]:
 
 
 # ---------------------------------------------------------------------------
-# Composite scoring
-# ---------------------------------------------------------------------------
-
-def composite_score(faithfulness, context_relevancy, mcq_quality, format_compliance):
-    """Weighted composite v2: 0.4 faith + 0.3 ctx + 0.2 mcq_quality + 0.1 fmt.
-
-    v1 formula (superseded — see Finding 4/5):
-        0.4*faithfulness + 0.4*context_relevancy + 0.1*answer_relevancy + 0.1*format_compliance
-    answer_relevancy was a weak discriminator on MCQ-generation (Finding 4);
-    replaced by the task-specific rubric-based mcq_quality signal (Finding 5).
-    ctx dropped from 0.4 to 0.3 to give the rubric 0.2; faithfulness kept at 0.4
-    as the safety-critical anchor.
-    """
-    vals = [faithfulness, context_relevancy, mcq_quality, format_compliance]
-    if any(v is None for v in vals):
-        return None
-    return round(
-        (faithfulness * 0.4)
-        + (context_relevancy * 0.3)
-        + (mcq_quality * 0.2)
-        + (format_compliance * 0.1),
-        4,
-    )
-
-
-# ---------------------------------------------------------------------------
-# CSV discovery
-# ---------------------------------------------------------------------------
-
-def find_latest_rag_csv(explicit_path: str | None = None) -> Path:
-    """Find the most recent RAG benchmark results CSV."""
-    if explicit_path:
-        p = RESULTS_DIR / explicit_path if not Path(explicit_path).is_absolute() else Path(explicit_path)
-        if p.exists():
-            return p
-        raise FileNotFoundError(f"Specified RAG CSV not found: {p}")
-
-    csvs = sorted(RESULTS_DIR.glob("rag_*.csv"), reverse=True)
-    if not csvs:
-        raise FileNotFoundError(
-            f"No RAG benchmark CSVs found in {RESULTS_DIR}.\n"
-            "Run `python -m benchmarks.rag_benchmark` first."
-        )
-    return csvs[0]
-
-
-def load_rag_results(csv_path: Path) -> list[dict]:
-    """Load RAG retrieval results CSV."""
-    rows = []
-    with open(csv_path, newline="", encoding="utf-8") as f:
-        reader = csv.DictReader(f)
-        for row in reader:
-            rows.append(row)
-    return rows
-
-
-
-# ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
 
 def run_benchmarks(rag_csv_path: str | None = None):
-    csv_path = find_latest_rag_csv(rag_csv_path)
-    rag_rows = load_rag_results(csv_path)
+    csv_path = find_latest_csv("rag", rag_csv_path)
+    rag_rows = load_csv(csv_path)
 
     n_questions = len(rag_rows)
     n_models = len(GENERATOR_MODELS)
@@ -537,11 +400,11 @@ def run_benchmarks(rag_csv_path: str | None = None):
         # Save incrementally after each model
         needs_header = not output_csv.exists() or output_csv.stat().st_size == 0
         with open(output_csv, "a", newline="", encoding="utf-8") as f:
-            writer = csv.DictWriter(f, fieldnames=CSV_FIELDS)
+            writer = csv.DictWriter(f, fieldnames=LLM_CSV_FIELDS)
             if needs_header:
                 writer.writeheader()
             for r in model_rows:
-                write_row = {k: r.get(k) for k in CSV_FIELDS}
+                write_row = {k: r.get(k) for k in LLM_CSV_FIELDS}
                 writer.writerow(write_row)
         print(f"    Saved {len(model_rows)} rows to {output_csv.name}  (total: {len(all_results)})")
 

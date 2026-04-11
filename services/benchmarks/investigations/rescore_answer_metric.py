@@ -25,7 +25,7 @@ Investigation summary (see LLM_BENCHMARK_REPORT.md Finding 4):
   answer payload + swappable embedding model.
 
 Usage:
-  cd services && python -m benchmarks.rescore_answer_metric \\
+  cd services && python -m benchmarks.investigations.rescore_answer_metric \\
       --llm-csv results/llm_20260410_191454.csv \\
       --rag-csv results/rag_20260410_160216.csv
 """
@@ -37,15 +37,14 @@ import sys
 import time
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).parent.parent))
+sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 from dotenv import load_dotenv
 
-load_dotenv(Path(__file__).parent.parent.parent / ".env")
+load_dotenv(Path(__file__).parent.parent.parent.parent / ".env")
 
-from benchmarks.llm_benchmark import extract_json  # reuse production parser
-
-RESULTS_DIR = Path(__file__).parent / "results"
+from benchmarks.io import RESULTS_DIR
+from benchmarks.parsing import extract_json
 
 
 def build_gemini_stack():

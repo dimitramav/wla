@@ -5,7 +5,7 @@ RAGAS + rubric scoring script for LLM benchmark results.
 Reads a completed llm_*.csv (from llm_benchmark.py), joins retrieval contexts
 from the corresponding rag_*.csv, and scores each row with:
   - RAGAS faithfulness (Gemini 2.5 Flash Lite judge)
-  - Rubric-based MCQ quality (see benchmarks/rubric.py): stem_clarity,
+  - Rubric-based MCQ quality (see benchmarks/scoring/rubric.py): stem_clarity,
     distractor_plausibility, pedagogical_appropriateness, mcq_quality
 
 Updates the CSV in-place with faithfulness, the four rubric columns, and
@@ -27,8 +27,6 @@ Requirements:
   - ragas, langchain-google-genai, sentence-transformers installed
 """
 
-import csv
-import os
 import sys
 import time
 from pathlib import Path
@@ -39,105 +37,14 @@ from dotenv import load_dotenv
 
 load_dotenv(Path(__file__).parent.parent.parent / ".env")
 
-from benchmarks import rubric
-from benchmarks.benchmark_data import LLM_CSV_FIELDS as CSV_FIELDS
-from benchmarks.llm_benchmark import extract_json
-
-RESULTS_DIR = Path(__file__).parent / "results"
+from benchmarks.config import LLM_CSV_FIELDS
+from benchmarks.io import build_context_lookup, find_latest_csv, load_csv, save_csv
+from benchmarks.parsing import extract_json
+from benchmarks.scoring import rubric
+from benchmarks.scoring.composite import composite_score
+from benchmarks.scoring.judge import build_gemini_judge
 
 BATCH_SIZE = 5
-
-
-# ---------------------------------------------------------------------------
-# CSV helpers
-# ---------------------------------------------------------------------------
-
-def find_latest_csv(prefix: str, explicit: str | None = None) -> Path:
-    if explicit:
-        p = RESULTS_DIR / explicit if not Path(explicit).is_absolute() else Path(explicit)
-        if p.exists():
-            return p
-        raise FileNotFoundError(f"CSV not found: {p}")
-    csvs = sorted(RESULTS_DIR.glob(f"{prefix}_*.csv"), reverse=True)
-    if not csvs:
-        raise FileNotFoundError(f"No {prefix}_*.csv found in {RESULTS_DIR}")
-    return csvs[0]
-
-
-def load_csv(path: Path) -> list[dict]:
-    with open(path, newline="", encoding="utf-8") as f:
-        return list(csv.DictReader(f))
-
-
-def save_csv(path: Path, rows: list[dict]):
-    with open(path, "w", newline="", encoding="utf-8") as f:
-        writer = csv.DictWriter(f, fieldnames=CSV_FIELDS)
-        writer.writeheader()
-        for r in rows:
-            writer.writerow({k: r.get(k, "") for k in CSV_FIELDS})
-
-
-# ---------------------------------------------------------------------------
-# Context lookup from RAG CSV
-# ---------------------------------------------------------------------------
-
-def build_context_lookup(rag_rows: list[dict]) -> dict:
-    """Build a lookup: (emb_model, chunk_size, chunk_overlap, retrieval_type, question) -> contexts list."""
-    lookup = {}
-    for r in rag_rows:
-        key = (r["emb_model"], r["chunk_size"], r["chunk_overlap"], r["retrieval_type"], r["question"])
-        contexts_raw = r.get("contexts_text", "")
-        lookup[key] = contexts_raw.split("|||") if contexts_raw else []
-    return lookup
-
-
-# ---------------------------------------------------------------------------
-# Gemini judge + embeddings setup
-# ---------------------------------------------------------------------------
-
-def build_gemini_judge():
-    api_key = os.getenv("GOOGLE_API_KEY")
-    if not api_key:
-        print("ERROR: GOOGLE_API_KEY not set")
-        sys.exit(1)
-
-    from langchain_google_genai import ChatGoogleGenerativeAI
-    from ragas.llms import LangchainLLMWrapper
-
-    llm = ChatGoogleGenerativeAI(
-        model="gemini-2.5-flash-lite",
-        google_api_key=api_key,
-        temperature=0.0,
-        max_retries=3,
-    )
-
-    # langchain-google-genai 1.0.x rejects `temperature` as a per-call kwarg,
-    # but ragas 0.1.x passes it through. Drop it — temperature is set at init.
-    class _GeminiJudge(LangchainLLMWrapper):
-        def generate_text(self, prompt, n=1, temperature=None, stop=None, callbacks=None):
-            result = self.langchain_llm.generate_prompt(
-                prompts=[prompt] * n, stop=stop, callbacks=callbacks,
-            )
-            if n > 1:
-                result.generations = [[g[0] for g in result.generations]]
-            return result
-
-        async def agenerate_text(self, prompt, n=1, temperature=None, stop=None, callbacks=None):
-            result = await self.langchain_llm.agenerate_prompt(
-                prompts=[prompt] * n, stop=stop, callbacks=callbacks,
-            )
-            if n > 1:
-                result.generations = [[g[0] for g in result.generations]]
-            return result
-
-    return _GeminiJudge(llm)
-
-
-# Embedding wrapper previously required by answer_relevancy (now disabled).
-# Kept commented for reference; re-enable if reinstating answer_relevancy.
-# def build_embeddings():
-#     from ragas.embeddings import HuggingfaceEmbeddings
-#     return HuggingfaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
 
 
 # ---------------------------------------------------------------------------
@@ -217,26 +124,6 @@ def score_batch(batch: list[dict], judge_llm) -> list[dict]:
     return results
 
 
-def composite_score(faithfulness, context_relevancy, mcq_quality, format_compliance):
-    """Weighted composite v2: 0.4 faith + 0.3 ctx + 0.2 mcq_quality + 0.1 fmt.
-
-    v1 formula (superseded — see Finding 4/5):
-        0.4*faithfulness + 0.4*context_relevancy + 0.1*answer_relevancy + 0.1*format_compliance
-    answer_relevancy was a weak discriminator on MCQ-generation; replaced
-    by the task-specific rubric-based mcq_quality signal.
-    """
-    vals = [faithfulness, context_relevancy, mcq_quality, format_compliance]
-    if any(v is None for v in vals):
-        return None
-    return round(
-        (faithfulness * 0.4)
-        + (context_relevancy * 0.3)
-        + (mcq_quality * 0.2)
-        + (format_compliance * 0.1),
-        4,
-    )
-
-
 # ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
@@ -287,6 +174,9 @@ def run_scoring(llm_csv_path: str | None = None, rag_csv_path: str | None = None
 
     print("\nSetting up Gemini judge...")
     judge_llm = build_gemini_judge()
+    if judge_llm is None:
+        print("ERROR: Gemini judge unavailable (GOOGLE_API_KEY not set or setup failed)")
+        sys.exit(1)
     print("  ✓ Google gemini-2.5-flash-lite")
     # MiniLM embeddings were previously required by answer_relevancy (disabled — see Finding 4).
 
@@ -321,7 +211,7 @@ def run_scoring(llm_csv_path: str | None = None, rag_csv_path: str | None = None
             break
 
         # Save after each batch
-        save_csv(llm_path, llm_rows)
+        save_csv(llm_path, llm_rows, LLM_CSV_FIELDS)
         print(f"    Saved to {llm_path.name}")
 
     # Clean up internal field
@@ -329,7 +219,7 @@ def run_scoring(llm_csv_path: str | None = None, rag_csv_path: str | None = None
         r.pop("_contexts", None)
 
     # Final save
-    save_csv(llm_path, llm_rows)
+    save_csv(llm_path, llm_rows, LLM_CSV_FIELDS)
 
     print(f"\n{'=' * 60}")
     print(f"Scored {scored}/{total} rows")
