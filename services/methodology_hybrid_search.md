@@ -133,7 +133,7 @@ The WLA retrieval pipeline supports two retrieval modes:
 
 The `hybrid` mode is implemented in `services/rag/qg.py` using the `rank_bm25`
 library for sparse scoring and Reciprocal Rank Fusion for merging. Both modes are
-benchmarked under identical ingestion conditions by `services/run_benchmarks.py`.
+benchmarked under identical ingestion conditions by `services/benchmarks/rag_benchmark.py`.
 
 ---
 

@@ -10,7 +10,7 @@ import os, requests, hashlib
 import json, re
 
 LLM_URL = os.getenv("LLM_URL", "http://localhost:11434")
-LLM_MODEL = os.getenv("LLM_MODEL", "mistral:7b-instruct-q4_0")  # see model picks below
+LLM_MODEL = os.getenv("LLM_MODEL", "gemma2:9b-instruct-q4_0")  # see model picks below
 
 # Generate a hash for a given prompt
 def prompt_hash(s: str) -> str:

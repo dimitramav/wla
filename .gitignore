@@ -1,3 +1,8 @@
+# --- Secrets ---
+.env
+.env.*
+!.env.example
+
 # --- OS cruft ---
 .DS_Store
 Thumbs.db
@@ -57,6 +62,9 @@ content/**/*.PDF
 .vscode/*
 !.vscode/settings.json
 !.vscode/extensions.json
+
+# Benchmark results (generated output)
+services/benchmarks/results/*.csv
 
 # Coverage / tooling
 coverage/
