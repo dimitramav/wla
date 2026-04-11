@@ -57,7 +57,7 @@ The `start.sh` script handles health checks and environment validation automatic
 If you prefer to start services individually in their own terminals:
 
 1.  **MongoDB**: `sudo systemctl start mongod`
-2.  **Ollama**: Ensure Ollama is running and `mistral:7b-instruct-q4_0` is pulled.
+2.  **Ollama**: Ensure Ollama is running and `gemma2:9b-instruct-q4_0` is pulled.
 3.  **Express API**: `cd api && npm run dev` (http://localhost:3001)
 4.  **FastAPI RAG Service**: 
     -   `cd services && ../.venv/bin/python -m uvicorn api.main:app --factory --port 8000`
@@ -71,7 +71,7 @@ The project includes a benchmarking suite that evaluates retrieval quality acros
 ### Prerequisites
 
 - All Python dependencies installed (`pip install -r services/requirements.txt`)
-- Ollama running with `mistral:7b-instruct-q4_0` pulled
+- Ollama running with `gemma2:9b-instruct-q4_0` pulled
 - PDF corpus ingested for the target topic (e.g. `school_anxiety`)
 
 ### Running the benchmark
