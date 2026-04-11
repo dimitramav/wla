@@ -2,8 +2,8 @@
 $font-family-heading: "Inter", sans-serif;
 $font-family-body: "Source Sans Pro", sans-serif;
 
-$font-size-base: 1rem;       // 16px
-$font-size-sm: 0.875rem;     // 14px
+$font-size-base: 1rem; // 16px
+$font-size-sm: 0.875rem; // 14px
 $font-size-h1: 2.5rem;
 $font-size-h2: 1.875rem;
 $font-size-h3: 1.5rem;
@@ -74,7 +74,7 @@ h3 {
 }
 
 h4 {
-  font-size: 110%;
+  font-size: 100%;
   font-weight: 300;
   margin-block-start: 0;
   margin-block-end: 0;
@@ -125,6 +125,6 @@ p {
   }
 
   h4 {
-    font-size: 100%;
+    font-size: 90%;
   }
 }

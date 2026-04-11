@@ -21,6 +21,7 @@ const DashboardContent = () => {
     const { user } = useAuth();
     const [selectedUrl, setSelectedUrl] = useState(null);
     const [activeDrawer, setActiveDrawer] = useState(null); // 'progress' | 'quiz' | null
+    const [isClosing, setIsClosing] = useState(false);
     const [activeTab, setActiveTab] = useState('practice'); // 'learn' | 'practice'
     const [quizError, setQuizError] = useState(false);
     const [quizKey, setQuizKey] = useState(0);
@@ -33,6 +34,16 @@ const DashboardContent = () => {
         setQuizError(false);
         setHighlightRequest(null);
     };
+
+    const handleClose = useCallback(() => {
+        if (isClosing || !activeDrawer) return;
+        setIsClosing(true);
+        setTimeout(() => {
+            setActiveDrawer(null);
+            setHighlightRequest(null);
+            setIsClosing(false);
+        }, 800);
+    }, [isClosing, activeDrawer]);
 
     const handleViewSource = useCallback((docFilename, searchText) => {
         if (!docFilename || !searchText || !topic) return;
@@ -70,16 +81,16 @@ const DashboardContent = () => {
                 </div>
             </div>
             <div className={`content-grid content-grid--${activeTab}`}>
-                <div className={`tutors-panel${activeDrawer ? ' tutors-panel--drawer' : ''}`}>
+                <div className={`tutors-panel${activeDrawer && !isClosing ? ' tutors-panel--drawer' : ''}`}>
                     {loading && <div className="panel-loading" />}
                     {!loading && <TheoryPanel onShow={handleShow} activeDrawer={activeDrawer} quizError={quizError} />}
                     {activeDrawer && (
-                        <button className="back-to-theory btn btn-outline-accent" onClick={() => { setActiveDrawer(null); setHighlightRequest(null); }}>
+                        <button className="back-to-theory btn btn-outline-accent" onClick={handleClose}>
                             ← Theory
                         </button>
                     )}
-                    {activeDrawer === 'progress' && <div className='drawer-panel'><Progress topic={topic} userId={user?.id} PASS_THRESHOLD={PASS_THRESHOLD} /></div>}
-                    {activeDrawer === 'quiz' && <div className='drawer-panel'><Quiz key={quizKey} topic={topic} docsetHash={docsetHash} userId={user?.id} PASS_THRESHOLD={PASS_THRESHOLD} onShowProgress={() => setActiveDrawer("progress")} onError={() => setQuizError(true)} onViewSource={handleViewSource} onQuizReset={handleQuizReset} /></div>}
+                    {activeDrawer === 'progress' && <div className={`drawer-panel${isClosing ? ' drawer-panel--closing' : ''}`}><Progress topic={topic} userId={user?.id} PASS_THRESHOLD={PASS_THRESHOLD} onClose={handleClose} /></div>}
+                    {activeDrawer === 'quiz' && <div className={`drawer-panel${isClosing ? ' drawer-panel--closing' : ''}`}><Quiz key={quizKey} topic={topic} docsetHash={docsetHash} userId={user?.id} PASS_THRESHOLD={PASS_THRESHOLD} onShowProgress={() => setActiveDrawer("progress")} onError={() => setQuizError(true)} onViewSource={handleViewSource} onQuizReset={handleQuizReset} onClose={handleClose} /></div>}
                 </div>
                 <div className="documents-panel">
                     <div className="documents-grid">

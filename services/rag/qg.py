@@ -30,7 +30,8 @@ RETRIEVAL_LOG = Path(__file__).parent.parent / "retrieval_logs.jsonl"
 
 # Configuration
 MAX_CHARS_PER_Q = 450
-POOL_TOP = 24
+POOL_PER_SOURCE = 30
+POOL_MIN = 200
 MAX_RETRIES = 2
 
 emb_fn = embedding_functions.SentenceTransformerEmbeddingFunction(
@@ -70,11 +71,13 @@ YN_TEMPLATE = QuestionTemplate(
 )
 
 def _ordered_chunks(col, topic: str, docset_hash: str) -> List[Tuple[str, Dict]]:
-    """Returns up to POOL_TOP (text, meta) pairs, round-robin across sources.
+    """Returns (text, meta) pairs round-robin across sources.
 
     Each source contributes its chunks in (page, chunk_index) order; sources
     are cycled so every document in the docset is represented before any one
-    document exhausts the pool budget.
+    document exhausts the pool budget. The pool budget scales with the number
+    of sources (POOL_PER_SOURCE per doc, floored at POOL_MIN) so retrieval
+    can reach the body of each document, not just the abstract/intro.
     """
     records = col.get(
         where={"$and": [{"topic": topic}, {"docset_hash": docset_hash}]},
@@ -94,13 +97,14 @@ def _ordered_chunks(col, topic: str, docset_hash: str) -> List[Tuple[str, Dict]]
         ))
 
     sources = sorted(by_source.keys())
+    pool_budget = max(POOL_MIN, POOL_PER_SOURCE * len(sources))
     pool: List[Tuple[str, Dict]] = []
     idx = 0
-    while len(pool) < POOL_TOP and any(idx < len(by_source[s]) for s in sources):
+    while len(pool) < pool_budget and any(idx < len(by_source[s]) for s in sources):
         for src in sources:
             if idx < len(by_source[src]):
                 pool.append(by_source[src][idx])
-                if len(pool) >= POOL_TOP:
+                if len(pool) >= pool_budget:
                     break
         idx += 1
     return pool
@@ -216,18 +220,38 @@ def _pick_plan_by_keywords_hybrid(
 
     final_order = sorted(range(n), key=lambda i: -final_scores[i])
 
-    # Build plan, de-duplicating by chunk index
+    # Per-source cap: prevent any single document (typically its abstract)
+    # from swallowing the plan. ceil(needed / num_sources_in_pool), floored at 1.
+    sources_in_pool = {pool[i][1].get("source", "") for i in range(n)}
+    max_per_source = max(1, -(-needed // max(1, len(sources_in_pool))))
+
     plan_with_scores, selected = [], set()
+    per_source: Dict[str, int] = {}
     for ci in final_order:
         if len(plan_with_scores) >= needed:
             break
         if ci in selected:
             continue
+        src = pool[ci][1].get("source", "")
+        if per_source.get(src, 0) >= max_per_source:
+            continue
         selected.add(ci)
+        per_source[src] = per_source.get(src, 0) + 1
         txt, meta = pool[ci]
         # Always store cosine similarity as the score (not RRF) — RRF is
         # only used for ordering. This keeps scores comparable across retrieval types.
         plan_with_scores.append((txt, meta, best_kw[ci], float(best_dense[ci])))
+
+    # Second pass: relax the cap if the capped pass left us short
+    if len(plan_with_scores) < needed:
+        for ci in final_order:
+            if len(plan_with_scores) >= needed:
+                break
+            if ci in selected:
+                continue
+            selected.add(ci)
+            txt, meta = pool[ci]
+            plan_with_scores.append((txt, meta, best_kw[ci], float(best_dense[ci])))
 
     # Backfill if fewer chunks than needed
     for i, (txt, meta) in enumerate(pool):

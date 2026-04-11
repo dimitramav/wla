@@ -8,7 +8,7 @@ import Header from '../layout/Header';
 import QuizQuestion from './QuizQuestion';
 import QuizScore from './QuizScore';
 import { submitQuiz } from '../../api/quiz';
-const Quiz = ({ topic, docsetHash, userId, PASS_THRESHOLD, onShowProgress, onError, onViewSource, onQuizReset }) => {
+const Quiz = ({ topic, docsetHash, userId, PASS_THRESHOLD, onShowProgress, onError, onViewSource, onQuizReset, onClose }) => {
 
     const {
         level,
@@ -47,7 +47,7 @@ const Quiz = ({ topic, docsetHash, userId, PASS_THRESHOLD, onShowProgress, onErr
     );
     return (
         <div className="quiz-panel">
-            <Header panel="quiz" title="Quiz" topic={topic} level={level} onLevelChange={handleLevelChange} selectLevel={submitted === false} subtitle={weakKeywords.join(", ")} />
+            <Header panel="quiz" title="Quiz" topic={topic} level={level} onLevelChange={handleLevelChange} selectLevel={submitted === false} subtitle={weakKeywords.join(", ")} onClose={submitted ? onClose : undefined} />
 
             {submitted ? (
                 <QuizScore
