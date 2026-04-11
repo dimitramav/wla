@@ -7,6 +7,7 @@
 # - Generates questions using an LLM (Large Language Model).
 
 import json
+import re
 from pathlib import Path
 from datetime import datetime, timezone
 from typing import List, Dict, Tuple, Optional
@@ -329,9 +330,12 @@ def _create_question_object(
     q: Dict,
     qid: str,
     keyword: Optional[str],
-    meta: Dict
+    meta: Dict,
+    chunk_text: str = ""
 ) -> Dict:
     """Create standardized question object"""
+    clean_text = re.sub(r'[#*>\-\[\]\(\)]', '', chunk_text).strip()
+    search_excerpt = clean_text[:200] if clean_text else ""
     return {
         "id": qid,
         "kind": q["kind"],
@@ -344,7 +348,8 @@ def _create_question_object(
             "doc": meta.get("source", ""),
             "page_from": meta.get("page", 0),
             "page_to": meta.get("page", 0),
-            "chunk_id": f"{meta.get('source', '')}-p{meta.get('page', 0)}-c{meta.get('chunk_index', meta.get('chunk_idx', 0))}"
+            "chunk_id": f"{meta.get('source', '')}-p{meta.get('page', 0)}-c{meta.get('chunk_index', meta.get('chunk_idx', 0))}",
+            "text": search_excerpt,
         }]
     }
 
@@ -405,7 +410,7 @@ def generate_qg(
         
         q = _generate_question(excerpt, seed_int + i, assigned_kw, MCQ_TEMPLATE, difficulty_profile)
         qid = f"q-{topic}-{docset_hash[:6]}-mcq-{i+1}"
-        questions.append(_create_question_object(q, qid, assigned_kw, meta))
+        questions.append(_create_question_object(q, qid, assigned_kw, meta, text))
 
     # Yes/No
     for j in range(min(yn_n, max(0, len(plan) - mcq_n))):
@@ -415,7 +420,7 @@ def generate_qg(
         
         q = _generate_question(excerpt, seed_int + 100 + j, assigned_kw, YN_TEMPLATE, difficulty_profile)
         qid = f"q-{topic}-{docset_hash[:6]}-yn-{j+1}"
-        questions.append(_create_question_object(q, qid, assigned_kw, meta))
+        questions.append(_create_question_object(q, qid, assigned_kw, meta, text))
 
     demo_user = "\n\n".join(_trim(p[0], 200) for p in pool[:8])
     return {
