@@ -40,32 +40,10 @@ from dotenv import load_dotenv
 load_dotenv(Path(__file__).parent.parent.parent / ".env")
 
 from benchmarks import rubric
+from benchmarks.benchmark_data import LLM_CSV_FIELDS as CSV_FIELDS
 from benchmarks.llm_benchmark import extract_json
 
 RESULTS_DIR = Path(__file__).parent / "results"
-
-CSV_FIELDS = [
-    "timestamp",
-    "generator_model",
-    "emb_model",
-    "chunk_size",
-    "chunk_overlap",
-    "retrieval_type",
-    "question",
-    "ground_truth",
-    "format_compliance",
-    "response_time_s",
-    "raw_output",
-    "generated_answer",
-    "faithfulness",
-    "answer_relevancy",  # retained for backward-compat; no longer computed (Finding 4)
-    "stem_clarity",
-    "distractor_plausibility",
-    "pedagogical_appropriateness",
-    "mcq_quality",
-    "context_relevancy",
-    "composite_score",
-]
 
 BATCH_SIZE = 5
 

@@ -42,42 +42,20 @@ from dotenv import load_dotenv
 
 load_dotenv(Path(__file__).parent.parent.parent / ".env")
 
-# ---------------------------------------------------------------------------
-# Generator models — all local Ollama, Q4 quantized
-# ---------------------------------------------------------------------------
-GENERATOR_MODELS = [
-    {
-        "name": "mistral-7b",
-        "tag": "mistral:7b-instruct-q4_0",
-        "pull_needed": True,  # pull/rm like others to conserve disk space
-    },
-    {
-        "name": "llama3.1-8b",
-        "tag": "llama3.1:8b-instruct-q4_0",
-        "pull_needed": True,
-    },
-    {
-        "name": "gemma2-9b",
-        "tag": "gemma2:9b-instruct-q4_0",
-        "pull_needed": True,
-    },
-    {
-        "name": "phi3.5-3.8b",
-        "tag": "phi3.5:3.8b-mini-instruct-q4_0",
-        "pull_needed": True,
-    },
-]
+from benchmarks.benchmark_data import GENERATOR_MODELS, LLM_CSV_FIELDS as CSV_FIELDS
+from llm.prompts import SYSTEM_QG as SYSTEM_PROMPT
 
 OLLAMA_URL = os.getenv("LLM_URL", "http://localhost:11434")
 RESULTS_DIR = Path(__file__).parent / "results"
 
 # ---------------------------------------------------------------------------
-# Prompt template (matches production prompts.py — MCQ generation)
+# Prompt template — system prompt is imported from production (llm.prompts).
+# The user template is intentionally a simplified version of
+# llm.prompts.USER_QG_MC_TEMPLATE: it strips the adaptive-difficulty knobs
+# (application_share, context_span, distractor_strength) so the benchmark
+# measures baseline generator quality at a fixed, neutral prompt without
+# the adaptive system as a confound.
 # ---------------------------------------------------------------------------
-SYSTEM_PROMPT = """You are a careful assessment item writer.
-You write questions ONLY from the provided excerpt. Do not invent facts.
-Always output strict JSON that conforms to the requested schema."""
-
 USER_PROMPT_TEMPLATE = """Write exactly ONE multiple-choice question from this excerpt.
 
 EXCERPT:
@@ -100,33 +78,6 @@ Return JSON:
 }}"""
 
 REQUIRED_KEYS = {"text", "options", "correct", "why"}
-
-# ---------------------------------------------------------------------------
-# CSV columns
-# ---------------------------------------------------------------------------
-CSV_FIELDS = [
-    "timestamp",
-    "generator_model",
-    "emb_model",
-    "chunk_size",
-    "chunk_overlap",
-    "retrieval_type",
-    "question",
-    "ground_truth",
-    "format_compliance",
-    "response_time_s",
-    "raw_output",
-    "generated_answer",
-    "faithfulness",
-    "answer_relevancy",  # retained for backward-compat; no longer used in composite (Finding 4/5)
-    "stem_clarity",
-    "distractor_plausibility",
-    "pedagogical_appropriateness",
-    "mcq_quality",
-    "context_relevancy",
-    "composite_score",
-]
-
 
 # ---------------------------------------------------------------------------
 # Ollama model management (pull/rm for disk space)
@@ -447,7 +398,7 @@ def load_rag_results(csv_path: Path) -> list[dict]:
 # Main
 # ---------------------------------------------------------------------------
 
-def run_benchmarks(rag_csv_path: str | None = None, resume_csv: str | None = None):
+def run_benchmarks(rag_csv_path: str | None = None):
     csv_path = find_latest_rag_csv(rag_csv_path)
     rag_rows = load_rag_results(csv_path)
 
@@ -473,39 +424,14 @@ def run_benchmarks(rag_csv_path: str | None = None, resume_csv: str | None = Non
     else:
         print("RAGAS Judge : unavailable — faithfulness/answer_relevancy will be None")
 
-    # Resume support: load existing results and detect completed models
     all_results = []
-    completed_models = set()
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
-
-    if resume_csv:
-        # Auto-detect latest partial CSV if no specific file given
-        if resume_csv is True:
-            csvs = sorted(RESULTS_DIR.glob("llm_*.csv"), reverse=True)
-            resume_path = csvs[0] if csvs else None
-        else:
-            resume_path = RESULTS_DIR / resume_csv if not Path(resume_csv).is_absolute() else Path(resume_csv)
-
-        if resume_path and resume_path.exists():
-            all_results = load_rag_results(resume_path)
-            completed_models = {r["generator_model"] for r in all_results}
-            print(f"Resuming    : {resume_path.name} ({len(all_results)} rows, models done: {', '.join(sorted(completed_models))})")
-            output_csv = resume_path
-        else:
-            print(f"No partial LLM CSV found — starting fresh")
-            ts = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
-            output_csv = RESULTS_DIR / f"llm_{ts}.csv"
-    else:
-        ts = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
-        output_csv = RESULTS_DIR / f"llm_{ts}.csv"
+    ts = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+    output_csv = RESULTS_DIR / f"llm_{ts}.csv"
 
     for model_idx, model in enumerate(GENERATOR_MODELS, 1):
         model_name = model["name"]
         model_tag = model["tag"]
-
-        if model_name in completed_models:
-            print(f"\n  [{model_idx}/{n_models}] Skipping {model_name} — already in resume CSV")
-            continue
 
         print(f"\n{'═' * 60}")
         print(f"  [{model_idx}/{n_models}] Generator: {model_name} ({model_tag})")
@@ -675,8 +601,6 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description="WLA LLM Generation Benchmark")
     parser.add_argument("--rag-csv", help="Path to specific RAG results CSV (default: latest)")
-    parser.add_argument("--resume", nargs="?", const=True, default=None,
-                        help="Resume from partial CSV (auto-detects latest, or specify filename)")
     args = parser.parse_args()
 
-    run_benchmarks(args.rag_csv, resume_csv=args.resume)
+    run_benchmarks(args.rag_csv)

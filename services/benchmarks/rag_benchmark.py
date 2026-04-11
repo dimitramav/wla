@@ -33,7 +33,7 @@ from datetime import datetime, timezone
 # Allow direct imports from the services/ package
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from benchmarks.golden_questions import GOLDEN_QUESTIONS
+from benchmarks.benchmark_data import GOLDEN_QUESTIONS
 
 # ---------------------------------------------------------------------------
 # Benchmark configuration matrix
