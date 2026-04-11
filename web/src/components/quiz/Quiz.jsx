@@ -8,7 +8,7 @@ import Header from '../layout/Header';
 import QuizQuestion from './QuizQuestion';
 import QuizScore from './QuizScore';
 import { submitQuiz } from '../../api/quiz';
-const Quiz = ({ topic, docsetHash, userId, PASS_THRESHOLD, onShowProgress, onError }) => {
+const Quiz = ({ topic, docsetHash, userId, PASS_THRESHOLD, onShowProgress, onError, onViewSource }) => {
 
     const {
         level,
@@ -56,6 +56,7 @@ const Quiz = ({ topic, docsetHash, userId, PASS_THRESHOLD, onShowProgress, onErr
                     level={level}
                     onShowProgress={onShowProgress}
                     onNewQuiz={(quizLevel) => { setSubmitted(false); handleLevelChange(quizLevel); }}
+                    onViewSource={onViewSource}
                 />
             ) : (
                 <>
