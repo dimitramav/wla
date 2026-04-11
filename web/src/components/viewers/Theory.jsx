@@ -62,14 +62,16 @@ const Theory = ({ onShow, activeDrawer, quizError }) => {
                 )
             )}
 
-            <div className="panel-buttons">
-                <button className="btn btn-outline-primary" disabled={activeDrawer === 'quiz' && !quizError} onClick={onShow.bind(this, 'progress')}><p>
-                    Show Progress</p>
-                </button>
-                <button className="btn btn-outline-primary" disabled={activeDrawer === 'quiz' && !quizError} onClick={onShow.bind(this, 'quiz')}><p>
-                    Start Quiz</p>
-                </button>
-            </div>
+            {!loading && !error && bullets?.length > 0 && (
+                <div className="panel-buttons">
+                    <button className="btn btn-outline-primary" disabled={activeDrawer === 'quiz' && !quizError} onClick={onShow.bind(this, 'progress')}><p>
+                        Show Progress</p>
+                    </button>
+                    <button className="btn btn-outline-primary" disabled={activeDrawer === 'quiz' && !quizError} onClick={onShow.bind(this, 'quiz')}><p>
+                        Start Quiz</p>
+                    </button>
+                </div>
+            )}
         </div>
     );
 };

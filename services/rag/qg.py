@@ -70,20 +70,40 @@ YN_TEMPLATE = QuestionTemplate(
 )
 
 def _ordered_chunks(col, topic: str, docset_hash: str) -> List[Tuple[str, Dict]]:
-    """Returns stably-ordered list of (text, meta) filtered by topic+hash"""
+    """Returns up to POOL_TOP (text, meta) pairs, round-robin across sources.
+
+    Each source contributes its chunks in (page, chunk_index) order; sources
+    are cycled so every document in the docset is represented before any one
+    document exhausts the pool budget.
+    """
     records = col.get(
         where={"$and": [{"topic": topic}, {"docset_hash": docset_hash}]},
         include=["documents", "metadatas"]
     )
     docs = records.get("documents", []) or []
     metas = records.get("metadatas", []) or []
-    pairs = list(zip(docs, metas))
-    pairs.sort(key=lambda x: (
-        x[1].get("source", ""),
-        x[1].get("page", 0),
-        x[1].get("chunk_index", x[1].get("chunk_idx", 0))
-    ))
-    return pairs[:POOL_TOP]
+
+    by_source: Dict[str, List[Tuple[str, Dict]]] = {}
+    for txt, meta in zip(docs, metas):
+        by_source.setdefault(meta.get("source", ""), []).append((txt, meta))
+
+    for src in by_source:
+        by_source[src].sort(key=lambda x: (
+            x[1].get("page", 0),
+            x[1].get("chunk_index", x[1].get("chunk_idx", 0))
+        ))
+
+    sources = sorted(by_source.keys())
+    pool: List[Tuple[str, Dict]] = []
+    idx = 0
+    while len(pool) < POOL_TOP and any(idx < len(by_source[s]) for s in sources):
+        for src in sources:
+            if idx < len(by_source[src]):
+                pool.append(by_source[src][idx])
+                if len(pool) >= POOL_TOP:
+                    break
+        idx += 1
+    return pool
 
 # Trim text to a specified number of characters
 def _trim(text: str, n: int = MAX_CHARS_PER_Q) -> str:
@@ -312,9 +332,10 @@ def _generate_question(
                 "kind": template.kind,
                 "text": text,
                 "options": template.options if template.kind == "yesno" else out.get("options", template.options),
-                "correct": "Yes" if template.kind == "yesno" and correct.lower().startswith("y") else 
+                "correct": "Yes" if template.kind == "yesno" and correct.lower().startswith("y") else
                           "No" if template.kind == "yesno" else correct,
-                "why": out.get("why", "Grounded in the excerpt.")
+                "why": out.get("why", "Grounded in the excerpt."),
+                "evidence": str(out.get("evidence", "")).strip(),
             }
 
     # Default fallback
@@ -323,7 +344,8 @@ def _generate_question(
         "text": template.default_text,
         "options": template.options,
         "correct": template.default_correct,
-        "why": "Grounded in the excerpt."
+        "why": "Grounded in the excerpt.",
+        "evidence": "",
     }
 
 def _create_question_object(
@@ -334,8 +356,7 @@ def _create_question_object(
     chunk_text: str = ""
 ) -> Dict:
     """Create standardized question object"""
-    clean_text = re.sub(r'[#*>\-\[\]\(\)]', '', chunk_text).strip()
-    search_excerpt = clean_text[:200] if clean_text else ""
+    search_excerpt = re.sub(r'[#*>\[\]]', '', chunk_text).strip()
     return {
         "id": qid,
         "kind": q["kind"],
@@ -346,9 +367,6 @@ def _create_question_object(
         "keywords": [keyword] if keyword else [],
         "source_spans": [{
             "doc": meta.get("source", ""),
-            "page_from": meta.get("page", 0),
-            "page_to": meta.get("page", 0),
-            "chunk_id": f"{meta.get('source', '')}-p{meta.get('page', 0)}-c{meta.get('chunk_index', meta.get('chunk_idx', 0))}",
             "text": search_excerpt,
         }]
     }

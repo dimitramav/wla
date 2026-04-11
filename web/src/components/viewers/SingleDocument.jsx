@@ -22,36 +22,39 @@ const SingleDocument = ({ url, onSearchReady, highlightRequest }) => {
     useEffect(() => {
         if (!highlightRequest || !highlightRequest.text) return;
 
-        // Build a prioritized list of candidate keywords. PDF text-layer
-        // extraction (pdf.js) often differs from Docling's markdown export —
-        // ligatures, smart quotes, hyphenation, and whitespace can break exact
-        // matches. Try short distinctive phrases first, then fall back to
-        // individual rare words.
+        // PDF text-layer extraction (pdf.js) often differs from Docling's
+        // markdown export — ligatures, smart quotes, hyphenation, and
+        // whitespace can break exact matches on long strings. So we slice
+        // the chunk into many short overlapping phrases and highlight all of
+        // them at once; each phrase that survives extraction contributes to
+        // a contiguous highlight covering the full chunk.
         const normalized = highlightRequest.text.replace(/\s+/g, ' ').trim();
         const words = normalized.split(' ').filter(w => w.length > 0);
-        const candidates = [];
 
-        // 1. Sliding 5-word windows
-        for (let i = 0; i <= words.length - 5 && candidates.length < 6; i++) {
-            candidates.push(words.slice(i, i + 5).join(' '));
-        }
-        // 2. Sliding 3-word windows
-        for (let i = 0; i <= words.length - 3 && candidates.length < 12; i++) {
-            candidates.push(words.slice(i, i + 3).join(' '));
-        }
-        // 3. Individual "rare" words (>6 chars, alphabetic)
-        for (const w of words) {
-            if (candidates.length >= 20) break;
-            const clean = w.replace(/[^\w]/g, '');
-            if (clean.length > 6 && /^[A-Za-z]+$/.test(clean)) {
-                candidates.push(clean);
+        const windows = (size) => {
+            const out = [];
+            for (let i = 0; i <= words.length - size; i++) {
+                out.push(words.slice(i, i + size).join(' '));
             }
-        }
+            return out;
+        };
 
-        console.log('[PDF-HL] candidates:', candidates);
-        if (candidates.length === 0) return;
+        const fiveWord = windows(5);
+        const threeWord = windows(3);
+        const rareWords = words
+            .map(w => w.replace(/[^\w]/g, ''))
+            .filter(w => w.length > 6 && /^[A-Za-z]+$/.test(w));
 
         let cancelled = false;
+        const runHighlight = async (keywords) => {
+            if (!keywords.length) return 0;
+            searchRef.current.clearHighlights();
+            const matches = await searchRef.current.highlight(
+                keywords.map(keyword => ({ keyword, matchCase: false, wholeWords: false }))
+            );
+            return Array.isArray(matches) ? matches.length : (matches ? 1 : 0);
+        };
+
         const tryHighlight = async (attempt = 0) => {
             if (cancelled || !searchRef.current) {
                 if (!searchRef.current && attempt < 10) {
@@ -60,22 +63,16 @@ const SingleDocument = ({ url, onSearchReady, highlightRequest }) => {
                 return;
             }
             try {
-                searchRef.current.clearHighlights();
-                for (const keyword of candidates) {
-                    const matches = await searchRef.current.highlight({
-                        keyword,
-                        matchCase: false,
-                        wholeWords: false,
-                    });
+                for (const tier of [fiveWord, threeWord, rareWords]) {
+                    const count = await runHighlight(tier);
                     if (cancelled) return;
-                    if (matches && matches.length > 0) {
-                        console.log('[PDF-HL] matched with:', keyword, 'count:', matches.length);
+                    if (count > 0) {
+                        console.log('[PDF-HL] tier matched, highlights:', count);
                         searchRef.current.jumpToMatch(0);
                         return;
                     }
-                    searchRef.current.clearHighlights();
                 }
-                console.warn('[PDF-HL] no candidates matched, attempt:', attempt);
+                console.warn('[PDF-HL] no tier matched, attempt:', attempt);
                 if (attempt < 5) setTimeout(() => tryHighlight(attempt + 1), 700);
             } catch (err) {
                 console.error('[PDF-HL] highlight error:', err);

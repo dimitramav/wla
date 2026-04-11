@@ -24,6 +24,7 @@ const DashboardContent = () => {
     const [activeTab, setActiveTab] = useState('practice'); // 'learn' | 'practice'
     const [quizError, setQuizError] = useState(false);
     const [quizKey, setQuizKey] = useState(0);
+    const [docListKey, setDocListKey] = useState(0);
     const [highlightRequest, setHighlightRequest] = useState(null);
 
     const handleShow = (selectedDrawer) => {
@@ -39,6 +40,11 @@ const DashboardContent = () => {
         setSelectedUrl(fullUrl);
         setHighlightRequest({ text: searchText, key: Date.now() });
     }, [topic]);
+
+    const handleQuizReset = useCallback(() => {
+        setHighlightRequest(null);
+        setDocListKey(k => k + 1);
+    }, []);
 
     return (
         <div className="dashboard-grid">
@@ -73,7 +79,7 @@ const DashboardContent = () => {
                         </button>
                     )}
                     {activeDrawer === 'progress' && <div className='drawer-panel'><Progress topic={topic} userId={user?.id} PASS_THRESHOLD={PASS_THRESHOLD} /></div>}
-                    {activeDrawer === 'quiz' && <div className='drawer-panel'><Quiz key={quizKey} topic={topic} docsetHash={docsetHash} userId={user?.id} PASS_THRESHOLD={PASS_THRESHOLD} onShowProgress={() => setActiveDrawer("progress")} onError={() => setQuizError(true)} onViewSource={handleViewSource} /></div>}
+                    {activeDrawer === 'quiz' && <div className='drawer-panel'><Quiz key={quizKey} topic={topic} docsetHash={docsetHash} userId={user?.id} PASS_THRESHOLD={PASS_THRESHOLD} onShowProgress={() => setActiveDrawer("progress")} onError={() => setQuizError(true)} onViewSource={handleViewSource} onQuizReset={handleQuizReset} /></div>}
                 </div>
                 <div className="documents-panel">
                     <div className="documents-grid">
@@ -96,7 +102,7 @@ const DashboardContent = () => {
                         )}
                         {!docsLoading && !docsError && docs.length > 0 && (
                             <>
-                                <DocumentList docs={docs} onSelect={setSelectedUrl} />
+                                <DocumentList key={docListKey} docs={docs} onSelect={setSelectedUrl} />
                                 {selectedUrl && <PdfViewer url={selectedUrl} highlightRequest={highlightRequest} />}
                             </>
                         )}
