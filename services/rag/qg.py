@@ -164,6 +164,9 @@ def _pick_plan_by_keywords_hybrid(
     needed: int,
     retrieval_type: str = "dense",
     _emb_fn=None,
+    *,
+    _chunk_vecs_cache: Optional[np.ndarray] = None,
+    _kw_vecs_cache: Optional[Dict[str, np.ndarray]] = None,
 ) -> Tuple[List[Tuple[str, Dict, Optional[str]]], List[float]]:
     """Select chunks using dense-only or hybrid (dense + BM25 + RRF) retrieval.
 
@@ -183,8 +186,19 @@ def _pick_plan_by_keywords_hybrid(
     n = len(chunk_texts)
 
     # --- Dense retrieval ---
-    kw_vecs = [local_fn(kw)[0] for kw in keywords]
-    chunk_vecs = [local_fn(txt)[0] for txt in chunk_texts]
+    if _kw_vecs_cache is not None:
+        kw_vecs = [_kw_vecs_cache[kw] for kw in keywords]
+    else:
+        kw_vecs = [local_fn(kw)[0] for kw in keywords]
+
+    if _chunk_vecs_cache is not None:
+        if len(_chunk_vecs_cache) != len(pool):
+            raise ValueError(
+                f"_chunk_vecs_cache length ({len(_chunk_vecs_cache)}) must equal len(pool) ({len(pool)})"
+            )
+        chunk_vecs = list(_chunk_vecs_cache)  # pre-computed, same order as pool
+    else:
+        chunk_vecs = [local_fn(txt)[0] for txt in chunk_texts]
 
     best_dense = np.zeros(n)
     best_kw = [None] * n
