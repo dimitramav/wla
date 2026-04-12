@@ -395,6 +395,48 @@ def _create_question_object(
         }]
     }
 
+def _plan_split(
+    pool: List[Tuple[str, Dict]],
+    keywords: List[str],
+    weak_keywords: Optional[List[str]],
+    total_questions: int,
+    weak_focus_ratio: float,
+    retrieval_type: str,
+    _fn,
+    *,
+    _chunk_vecs_cache: Optional[np.ndarray] = None,
+    _kw_vecs_cache: Optional[Dict[str, np.ndarray]] = None,
+    log_retrieval: bool = True,
+    topic: str = "",
+) -> Tuple[List[Tuple[str, Dict, Optional[str]]], List[float], List[Tuple[str, Dict, Optional[str]]], List[float]]:
+    """Run the weak/strong retrieval split.
+
+    Returns (weak_plan, weak_scores, strong_plan, strong_scores).
+    The caches and log_retrieval kwargs are opt-in for the LLM-free
+    simulation path (Phase 9 plan-only). Live callers pass nothing and
+    get the original behaviour.
+    """
+    weak_focus_questions = int(total_questions * weak_focus_ratio)
+    normal_questions = total_questions - weak_focus_questions
+
+    weak_plan, weak_scores = _pick_plan_by_keywords_hybrid(
+        pool, weak_keywords or [], weak_focus_questions, retrieval_type, _fn,
+        _chunk_vecs_cache=_chunk_vecs_cache, _kw_vecs_cache=_kw_vecs_cache,
+    )
+    if log_retrieval:
+        _write_retrieval_log(topic, "weak_keywords", weak_plan, weak_scores, retrieval_type)
+
+    strong_keywords = list(set(keywords) - set(weak_keywords or []))
+    strong_plan, strong_scores = _pick_plan_by_keywords_hybrid(
+        pool, strong_keywords, normal_questions, retrieval_type, _fn,
+        _chunk_vecs_cache=_chunk_vecs_cache, _kw_vecs_cache=_kw_vecs_cache,
+    )
+    if log_retrieval:
+        _write_retrieval_log(topic, "strong_keywords", strong_plan, strong_scores, retrieval_type)
+
+    return weak_plan, weak_scores, strong_plan, strong_scores
+
+
 # Generate questions for a topic
 def generate_qg(
     topic: str,
@@ -425,21 +467,18 @@ def generate_qg(
 
     # Split questions between weak and normal keywords
     total_questions = mcq_n + yn_n
-    weak_focus_questions = int(total_questions * weak_focus_ratio)
-    normal_questions = total_questions - weak_focus_questions
 
-    # Retrieve chunks for weak keywords, log results
-    weak_plan, weak_scores = _pick_plan_by_keywords_hybrid(
-        pool, weak_keywords or [], weak_focus_questions, retrieval_type, _fn
+    weak_plan, weak_scores, strong_plan, strong_scores = _plan_split(
+        pool=pool,
+        keywords=keywords,
+        weak_keywords=weak_keywords,
+        total_questions=total_questions,
+        weak_focus_ratio=weak_focus_ratio,
+        retrieval_type=retrieval_type,
+        _fn=_fn,
+        log_retrieval=True,
+        topic=topic,
     )
-    _write_retrieval_log(topic, "weak_keywords", weak_plan, weak_scores, retrieval_type)
-
-    # Retrieve chunks for strong keywords, log results
-    strong_keywords = list(set(keywords) - set(weak_keywords or []))
-    strong_plan, strong_scores = _pick_plan_by_keywords_hybrid(
-        pool, strong_keywords, normal_questions, retrieval_type, _fn
-    )
-    _write_retrieval_log(topic, "strong_keywords", strong_plan, strong_scores, retrieval_type)
 
     # Combine plans
     plan = weak_plan + strong_plan
