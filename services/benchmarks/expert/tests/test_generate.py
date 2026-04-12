@@ -144,6 +144,7 @@ class TestWriteXlsx:
         assert ws["A1"].value == "Expert Review Instructions"
         assert "Rating Scale" in (ws["A5"].value or "")
         assert "1 = Completely wrong" in (ws["A6"].value or "")
+        assert "keyword" in (ws["A13"].value or "").lower()
 
     def test_freeze_panes(self, tmp_path):
         rows = build_rows(_make_questions(2), "beginner")

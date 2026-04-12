@@ -86,27 +86,38 @@ def build_instructions_sheet(ws):
     for score, label in LIKERT_LABELS.items():
         ws[f"A{5 + score}"] = f"{score} = {label}"
 
-    ws["A12"] = "Criteria Definitions:"
+    ws["A12"] = "Question Structure:"
     ws["A12"].font = Font(bold=True)
     ws["A13"] = (
-        "factual_correctness: Is the question and its correct answer factually accurate?"
+        "Each question targets a specific keyword from the topic's taxonomy. "
+        "The 'keyword' column shows which concept the question was generated for."
     )
     ws["A14"] = (
+        "Questions are distributed evenly: 2 questions per keyword, 5 keywords per "
+        "difficulty level, across 3 levels (beginner, intermediate, advanced)."
+    )
+
+    ws["A16"] = "Criteria Definitions:"
+    ws["A16"].font = Font(bold=True)
+    ws["A17"] = (
+        "factual_correctness: Is the question and its correct answer factually accurate?"
+    )
+    ws["A18"] = (
         "pedagogical_alignment: Is the question appropriate for training teachers on this topic?"
     )
-    ws["A15"] = (
+    ws["A19"] = (
         "source_fidelity: Does the question faithfully reflect the source passage shown?"
     )
 
-    ws["A17"] = (
+    ws["A21"] = (
         "rationale: Optional free-text explanation for your ratings, "
         "especially for scores \u2264 3."
     )
 
-    ws["A19"] = (
+    ws["A23"] = (
         "Estimated time: ~1-2 minutes per question, ~2 hours total for 60 questions."
     )
-    ws["A19"].font = Font(bold=True)
+    ws["A23"].font = Font(bold=True)
 
     ws.column_dimensions["A"].width = 80
 
@@ -206,7 +217,7 @@ def main():
     )
     parser.add_argument("--topic", default=TOPIC, help="Topic name")
     parser.add_argument("--docset-hash", default=None, help="Docset hash (auto-detected if omitted)")
-    parser.add_argument("--n-per-level", type=int, default=N_PER_LEVEL, help="Questions per level per set")
+    parser.add_argument("--n-per-level", type=int, default=N_PER_LEVEL, help="Questions per level per set (distributed evenly across 5 keywords)")
     parser.add_argument("--n-sets", type=int, default=N_SETS, help="Number of question sets")
     parser.add_argument("--seed", type=int, default=42, help="Base seed for reproducibility")
     parser.add_argument("--output", default=None, help="Output path (default: results/expert_<ts>.xlsx)")
@@ -228,6 +239,8 @@ def main():
     output_path = args.output or str(RESULTS_DIR / f"expert_{args.topic}_{ts}.xlsx")
 
     all_rows = []
+    n_per_kw = args.n_per_level // 5  # 5 keywords per level → 2 questions each
+
     for set_idx in range(args.n_sets):
         for level in LEVELS:
             keywords = load_level_keywords(args.topic, level)
@@ -237,17 +250,19 @@ def main():
                 "distractor_strength": int(level_map.get(level, "1")),
                 "application_share": 0.0 if level == "beginner" else 0.3 if level == "intermediate" else 0.6,
             }
-            result = generate_qg(
-                topic=args.topic,
-                docset_hash=docset_hash,
-                mix={"mcq": args.n_per_level, "yesno": 0},
-                seed=str(args.seed + set_idx),
-                keywords=keywords,
-                weak_keywords=None,
-                difficulty_profile=difficulty_profile,
-            )
-            questions = result.get("questions", [])
-            all_rows.extend(build_rows(questions[:args.n_per_level], level))
+            # Generate n_per_kw questions per keyword for even coverage
+            for kw_idx, kw in enumerate(keywords):
+                result = generate_qg(
+                    topic=args.topic,
+                    docset_hash=docset_hash,
+                    mix={"mcq": n_per_kw, "yesno": 0},
+                    seed=str(args.seed + set_idx * 100 + kw_idx),
+                    keywords=[kw],
+                    weak_keywords=None,
+                    difficulty_profile=difficulty_profile,
+                )
+                questions = result.get("questions", [])
+                all_rows.extend(build_rows(questions[:n_per_kw], level))
 
     write_xlsx(all_rows, output_path)
     print(f"Generated {len(all_rows)} questions -> {output_path}")
