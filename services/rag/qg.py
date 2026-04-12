@@ -451,6 +451,75 @@ def _plan_split(
     return weak_plan, weak_scores, strong_plan, strong_scores
 
 
+def plan_only(
+    topic: str,
+    docset_hash: str,
+    mix: Dict,
+    keywords: List[str],
+    weak_keywords: Optional[List[str]],
+    weak_focus_ratio: float = 0.65,
+    retrieval_type: str = "dense",
+    emb_model: str = None,
+    *,
+    _chunk_vecs_cache: Optional[np.ndarray] = None,
+    _kw_vecs_cache: Optional[Dict[str, np.ndarray]] = None,
+    _pool_cache: Optional[List[Tuple[str, Dict]]] = None,
+) -> Dict:
+    """LLM-free scheduler path. Returns targeted keywords without calling Ollama.
+
+    Mirrors generate_qg's weak/strong split and per-question keyword assignment,
+    but stops before _generate_question. Used by the Phase 9 simulation harness.
+    Does NOT write to services/retrieval_logs.jsonl.
+    """
+    _fn = _get_emb_fn(emb_model)
+    if _pool_cache is not None:
+        pool = _pool_cache
+    else:
+        col = collection_for(topic, emb_model)
+        pool = _ordered_chunks(col, topic, docset_hash)
+    if not pool:
+        return {"targeted_keywords": [], "weak_targets": [], "strong_targets": [],
+                "weak_slot_n": 0, "strong_slot_n": 0}
+
+    total_questions = int(mix.get("mcq", 0)) + int(mix.get("yesno", 0))
+
+    weak_plan, _, strong_plan, _ = _plan_split(
+        pool=pool,
+        keywords=keywords,
+        weak_keywords=weak_keywords,
+        total_questions=total_questions,
+        weak_focus_ratio=weak_focus_ratio,
+        retrieval_type=retrieval_type,
+        _fn=_fn,
+        _chunk_vecs_cache=_chunk_vecs_cache,
+        _kw_vecs_cache=_kw_vecs_cache,
+        log_retrieval=False,
+        topic=topic,
+    )
+
+    plan = weak_plan + strong_plan
+    weak_slot_n = len(weak_plan)
+    strong_slot_n = len(strong_plan)
+
+    # Replicate the fallback assignment rule from generate_qg:451,461:
+    # assigned_kw = matched_kw or (keywords[i % len(keywords)] if keywords else None)
+    targeted = []
+    for i, (_, _, matched_kw) in enumerate(plan):
+        assigned = matched_kw or (keywords[i % len(keywords)] if keywords else None)
+        targeted.append(assigned)
+
+    weak_targets = targeted[:weak_slot_n]
+    strong_targets = targeted[weak_slot_n:]
+
+    return {
+        "targeted_keywords": targeted,
+        "weak_targets": weak_targets,
+        "strong_targets": strong_targets,
+        "weak_slot_n": weak_slot_n,
+        "strong_slot_n": strong_slot_n,
+    }
+
+
 # Generate questions for a topic
 def generate_qg(
     topic: str,
