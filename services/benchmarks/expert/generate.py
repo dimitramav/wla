@@ -12,6 +12,7 @@ Usage:
 """
 
 import argparse
+import re
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -43,9 +44,11 @@ def build_rows(questions: list[dict], level: str) -> list[dict]:
     rows = []
     for q in questions:
         options_list = q.get("options", [])
+        # Strip any existing letter prefix (e.g. "A) ") the LLM already added
+        cleaned = [re.sub(r'^[A-Da-d]\)\s*', '', opt) for opt in options_list[:4]]
         letters = ["A", "B", "C", "D"]
         serialized = "; ".join(
-            f"{letters[i]}) {opt}" for i, opt in enumerate(options_list[:4])
+            f"{letters[i]}) {opt}" for i, opt in enumerate(cleaned)
         )
 
         source_spans = q.get("source_spans", [])
@@ -268,7 +271,8 @@ def main():
                     mix={"mcq": n_per_kw, "yesno": 0},
                     seed=str(args.seed + set_idx * 100 + kw_idx),
                     keywords=[kw],
-                    weak_keywords=None,
+                    weak_keywords=[],
+                    weak_focus_ratio=0.0,
                     difficulty_profile=difficulty_profile,
                 )
                 questions = result.get("questions", [])

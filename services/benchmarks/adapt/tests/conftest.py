@@ -10,11 +10,11 @@ def tiny_bkt_params():
 @pytest.fixture
 def toy_keywords():
     return [
-        "common signs and symptoms",
-        "peer aggression",
-        "social evaluation fears",
-        "somatic complaints",
-        "attendance tracking",
+        "non-attendance",
+        "bullying",
+        "anxiety symptoms",
+        "self-esteem",
+        "wellbeing",
     ]
 
 

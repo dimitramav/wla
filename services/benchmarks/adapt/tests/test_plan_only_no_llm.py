@@ -11,11 +11,11 @@ from rag.ingest import ingest_topic
 
 TOPIC = "school_anxiety"
 KEYWORDS = [
-    "common signs and symptoms",
-    "peer aggression",
-    "social evaluation fears",
-    "somatic complaints",
-    "attendance tracking",
+    "non-attendance",
+    "bullying",
+    "anxiety symptoms",
+    "self-esteem",
+    "wellbeing",
 ]
 
 
@@ -31,7 +31,7 @@ def test_plan_only_does_not_call_llm():
             docset_hash=docset_hash,
             mix={"mcq": 3, "yesno": 2},
             keywords=KEYWORDS,
-            weak_keywords=["peer aggression"],
+            weak_keywords=["bullying"],
             weak_focus_ratio=0.6,
         )
     assert "targeted_keywords" in result
@@ -47,7 +47,7 @@ def test_plan_only_does_not_write_retrieval_log():
             docset_hash=docset_hash,
             mix={"mcq": 2, "yesno": 1},
             keywords=KEYWORDS,
-            weak_keywords=["peer aggression"],
+            weak_keywords=["bullying"],
             weak_focus_ratio=0.65,
         )
     after = RETRIEVAL_LOG.stat().st_size if RETRIEVAL_LOG.exists() else 0

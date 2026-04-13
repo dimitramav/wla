@@ -37,8 +37,8 @@ consequential.
 ### What this benchmark evaluates
 
 This benchmark evaluates **retrieval quality** — specifically: given a concept from
-the school anxiety keyword taxonomy (e.g. "somatic complaints", "graduated exposure",
-"cognitive restructuring"), does the system retrieve the chunks from the corpus that
+the school anxiety keyword taxonomy (e.g. "anxiety symptoms", "coping",
+"resilience"), does the system retrieve the chunks from the corpus that
 actually contain knowledge about that concept?
 
 The language model is not evaluated here. The benchmark does not ask "did Mistral

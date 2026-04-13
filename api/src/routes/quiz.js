@@ -44,15 +44,20 @@ router.post("/:topic/quiz/start", async (req, res) => {
         }
         let weakKeywords = await computeWeakKeywords(uid, topic, lvl);
         const cfg = LEVELS[lvl];
+        // When no weak keywords (new user, no history), send all questions
+        // through the strong (keyword-targeted) path to avoid untargeted chunks
+        const effectiveWeakRatio = weakKeywords.length > 0
+            ? (weakFocusRatio || 0.6)
+            : 0.0;
         // call FastAPI /qg
         const payload = {
             hash: docsetHash,
             keywords: baseKeywords,
             mix: cfg.mix,
-            seed: "default-seed",    // to be investigated 
+            seed: "default-seed",    // to be investigated
             difficulty_profile: cfg.difficulty_profile,
             weak_keywords: weakKeywords,
-            weak_focus_ratio: weakFocusRatio || 0.6,  // default to 60% weak keyword focus
+            weak_focus_ratio: effectiveWeakRatio,
         };
         const data = await qg(payload, topic);
         const qs = data?.questions || [];

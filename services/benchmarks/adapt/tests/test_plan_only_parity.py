@@ -18,13 +18,13 @@ from rag.ingest import ingest_topic
 
 TOPIC = "school_anxiety"
 KEYWORDS = [
-    "common signs and symptoms",
-    "peer aggression",
-    "social evaluation fears",
-    "somatic complaints",
-    "attendance tracking",
+    "non-attendance",
+    "bullying",
+    "anxiety symptoms",
+    "self-esteem",
+    "wellbeing",
 ]
-WEAK = ["peer aggression", "somatic complaints"]
+WEAK = ["bullying", "self-esteem"]
 MIX = {"mcq": 3, "yesno": 2}
 SEED = "parity-seed-1"
 RATIO = 0.65
