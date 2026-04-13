@@ -16,7 +16,7 @@ Results feed directly into the thesis evaluation (Chapter 5) as evidence of cont
 
 Each reviewer receives a single `.xlsx` file containing:
 1. **Instructions sheet** — embedded rating scale definitions and criteria
-2. **Expert Review sheet** — 60 questions (2 sets x 3 difficulty levels x 10 per level) with locked question columns and unlocked rating columns
+2. **Expert Review sheet** — 60 questions (2 sets × 3 difficulty levels × 5 keywords × 2 questions per keyword) with locked question columns and unlocked rating columns
 
 ## Rating Criteria
 
@@ -43,15 +43,15 @@ Rate whether the question is appropriate and useful for training teachers on stu
 | 5 | Completely aligned — excellent question for teacher training on this topic |
 
 ### Source Fidelity (1-5)
-Rate whether the question faithfully reflects the source passage shown in the "source_snippet" column.
+Rate whether the question faithfully reflects the source document shown in the "source_document" column.
 
 | Score | Meaning |
 |-------|---------|
-| 1 | No connection — question content has no relation to the source passage |
+| 1 | No connection — question content has no relation to the source document |
 | 2 | Weak connection — question loosely relates to the source but makes unsupported claims |
 | 3 | Partial connection — question draws from the source but adds or distorts information |
 | 4 | Strong connection — question accurately reflects the source with minor extrapolation |
-| 5 | Direct reflection — question is clearly and accurately derived from the source passage |
+| 5 | Direct reflection — question is clearly and accurately derived from the source document |
 
 ### Rationale (free text, optional)
 Provide a brief explanation for any rating <= 3, or note specific issues (e.g., "correct answer should be B, not C" or "question assumes knowledge beyond beginner level").
@@ -62,7 +62,7 @@ Provide a brief explanation for any rating <= 3, or note specific issues (e.g., 
 2. Read the **Instructions** sheet first
 3. Switch to the **Expert Review** sheet
 4. For each question row (60 total):
-   a. Read the question text, options, correct answer, and source snippet
+   a. Read the question text, options, correct answer, explanation, and source document
    b. Rate factual_correctness (1-5) using the dropdown
    c. Rate pedagogical_alignment (1-5) using the dropdown
    d. Rate source_fidelity (1-5) using the dropdown

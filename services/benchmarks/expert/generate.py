@@ -107,7 +107,7 @@ def build_instructions_sheet(ws):
         "pedagogical_alignment: Is the question appropriate for training teachers on this topic?"
     )
     ws["A19"] = (
-        "source_fidelity: Does the question faithfully reflect the source passage shown?"
+        "source_fidelity: Does the question faithfully reflect the source document cited?"
     )
 
     ws["A21"] = (
