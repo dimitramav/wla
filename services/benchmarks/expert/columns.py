@@ -6,7 +6,8 @@ QUESTION_COLS = [
     "question_text",
     "correct_answer",
     "options",
-    "source_snippet",
+    "explanation",
+    "source_document",
     "keyword",
     "difficulty_level",
 ]

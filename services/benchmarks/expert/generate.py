@@ -49,9 +49,9 @@ def build_rows(questions: list[dict], level: str) -> list[dict]:
         )
 
         source_spans = q.get("source_spans", [])
-        snippet = ""
-        if source_spans and source_spans[0].get("text"):
-            snippet = source_spans[0]["text"][:200]
+        source_doc = ""
+        if source_spans and source_spans[0].get("doc"):
+            source_doc = source_spans[0]["doc"]
 
         keywords = q.get("keywords", [])
         keyword = keywords[0] if keywords else ""
@@ -60,7 +60,8 @@ def build_rows(questions: list[dict], level: str) -> list[dict]:
             "question_text": q.get("text", ""),
             "correct_answer": q.get("correct", ""),
             "options": serialized,
-            "source_snippet": snippet,
+            "explanation": q.get("why", ""),
+            "source_document": source_doc,
             "keyword": keyword,
             "difficulty_level": level,
         }
@@ -126,7 +127,8 @@ COL_WIDTHS = {
     "question_text": 50,
     "correct_answer": 15,
     "options": 40,
-    "source_snippet": 60,
+    "explanation": 50,
+    "source_document": 40,
     "keyword": 20,
     "difficulty_level": 15,
     "factual_correctness": 20,
@@ -202,7 +204,7 @@ def load_level_keywords(topic: str, level: str) -> list[str]:
     """Load keywords for a specific difficulty level from keywords.yaml."""
     import yaml
 
-    kw_path = Path(__file__).parent.parent.parent / "content" / topic / "keywords.yaml"
+    kw_path = Path(__file__).parent.parent.parent.parent / "content" / topic / "keywords.yaml"
     with open(kw_path, encoding="utf-8") as f:
         data = yaml.safe_load(f)
 
@@ -240,6 +242,12 @@ def main():
 
     all_rows = []
     n_per_kw = args.n_per_level // 5  # 5 keywords per level → 2 questions each
+    total_calls = args.n_sets * len(LEVELS) * 5  # sets × levels × keywords
+    call_num = 0
+
+    print(f"Plan: {args.n_sets} set(s) × {len(LEVELS)} levels × 5 keywords × {n_per_kw} q/kw = {args.n_sets * len(LEVELS) * 5 * n_per_kw} questions")
+    print(f"Total generate_qg calls: {total_calls}")
+    print()
 
     for set_idx in range(args.n_sets):
         for level in LEVELS:
@@ -252,6 +260,8 @@ def main():
             }
             # Generate n_per_kw questions per keyword for even coverage
             for kw_idx, kw in enumerate(keywords):
+                call_num += 1
+                print(f"[{call_num}/{total_calls}] set={set_idx+1} level={level} keyword='{kw}' ({n_per_kw} MCQs)...", flush=True)
                 result = generate_qg(
                     topic=args.topic,
                     docset_hash=docset_hash,
@@ -263,9 +273,10 @@ def main():
                 )
                 questions = result.get("questions", [])
                 all_rows.extend(build_rows(questions[:n_per_kw], level))
+                print(f"  ✓ Got {len(questions)} questions (total so far: {len(all_rows)})", flush=True)
 
     write_xlsx(all_rows, output_path)
-    print(f"Generated {len(all_rows)} questions -> {output_path}")
+    print(f"\nGenerated {len(all_rows)} questions -> {output_path}")
 
 
 if __name__ == "__main__":

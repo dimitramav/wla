@@ -51,17 +51,19 @@ class TestBuildRows:
         assert "; C) " in opts
         assert "; D) " in opts
 
-    def test_truncates_source_snippet(self):
-        q = _make_questions(1)
-        q[0]["source_spans"] = [{"doc": "test.pdf", "text": "X" * 300}]
-        rows = build_rows(q, "advanced")
-        assert len(rows[0]["source_snippet"]) == 200
+    def test_source_document_from_doc_field(self):
+        rows = build_rows(_make_questions(1), "advanced")
+        assert rows[0]["source_document"] == "test.pdf"
+
+    def test_explanation_from_why_field(self):
+        rows = build_rows(_make_questions(1), "beginner")
+        assert rows[0]["explanation"] == "Because it is correct."
 
     def test_empty_source_spans(self):
         q = _make_questions(1)
         q[0]["source_spans"] = []
         rows = build_rows(q, "beginner")
-        assert rows[0]["source_snippet"] == ""
+        assert rows[0]["source_document"] == ""
 
     def test_empty_keywords(self):
         q = _make_questions(1)
