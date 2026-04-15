@@ -67,6 +67,7 @@ RAG_CSV_FIELDS = [
     "question",
     "ground_truth",
     "keywords_used",
+    "difficulty_label",
     "num_contexts",
     "contexts_text",
     "top_score",
@@ -84,6 +85,7 @@ LLM_CSV_FIELDS = [
     "retrieval_type",
     "question",
     "ground_truth",
+    "difficulty_label",
     "format_compliance",
     "response_time_s",
     "raw_output",
@@ -94,6 +96,7 @@ LLM_CSV_FIELDS = [
     "distractor_plausibility",
     "pedagogical_appropriateness",
     "mcq_quality",
+    "text_independence",
     "context_relevancy",
     "composite_score",
 ]

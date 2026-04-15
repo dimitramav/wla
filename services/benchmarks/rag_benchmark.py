@@ -233,6 +233,7 @@ def run_benchmarks(resume_from: int = 1):
             question = item["question"]
             ground_truth = item["ground_truth"]
             keywords = item["keywords"]
+            difficulty_label = item.get("difficulty_label", "")
 
             try:
                 plan, scores = _pick_plan_by_keywords_hybrid(
@@ -262,6 +263,7 @@ def run_benchmarks(resume_from: int = 1):
                 "question": question,
                 "ground_truth": ground_truth,
                 "keywords_used": "|".join(keywords),
+                "difficulty_label": difficulty_label,
                 "num_contexts": len(contexts),
                 "contexts_text": "|||".join(contexts),
                 "top_score": top_score,
