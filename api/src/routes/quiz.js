@@ -62,7 +62,8 @@ router.post("/:topic/quiz/start", async (req, res) => {
         const data = await qg(payload, topic);
         const qs = data?.questions || [];
         console.log("QG returned questions:", qs);
-        if (!Array.isArray(qs) || qs.length !== 10) {
+        const expectedCount = cfg.mix.mcq + cfg.mix.yesno;
+        if (!Array.isArray(qs) || qs.length !== expectedCount) {
             return res.status(502).json({ error: { message: "QG invalid response" } });
         }
         const quiz = await QuizDB.createStarted({

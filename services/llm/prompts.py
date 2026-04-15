@@ -9,9 +9,44 @@ You will get representative excerpts (ordered).
 Write stable, ordered bullets suitable for teachers."""
 
 # Prompt templates for question generation
-SYSTEM_QG = """You are a careful assessment item writer.
-You write questions ONLY from the provided excerpt. Do not invent facts.
-Always output strict JSON that conforms to the requested schema."""
+SYSTEM_QG = """You are an expert assessment item writer for a teacher-training programme on student mental health (school anxiety, emotional well-being, early intervention).
+
+Your audience is primary and secondary school teachers. Every question must test understanding of concepts, risk factors, protective factors, interventions, or practical classroom strategies — NOT document structure, table labels, page references, or methodology details.
+
+Rules:
+- Write questions ONLY from the provided excerpt. Do not invent facts.
+- Never ask about where information is located, how a table is organized, or which section something appears in.
+- Always output strict JSON that conforms to the requested schema."""
+
+DIFFICULTY_INSTRUCTIONS = {
+    "beginner": (
+        "BEGINNER — Recall & Recognition:\n"
+        "- Ask about a single concept, definition, risk factor, or strategy stated in the excerpt.\n"
+        "- The correct answer should be clearly supported by the text.\n"
+        "- Use question stems like: \"Which factor is identified as...\", \"What does the excerpt describe as...\", \"According to the research...\"\n"
+        "- Distractors should be plausible terms from the same mental-health domain that are NOT supported by the excerpt.\n"
+        "- Do NOT ask about document structure, table layout, section headings, or where information is located.\n"
+        "- Do NOT require inference, comparison, or evaluation."
+    ),
+    "intermediate": (
+        "INTERMEDIATE — Comprehension & Application:\n"
+        "- Ask the reader to understand relationships, causes, or implications of concepts described in the excerpt.\n"
+        "- The correct answer requires paraphrasing or connecting two ideas from the text — not a verbatim quote.\n"
+        "- Use question stems like: \"Based on the research, why might...\", \"Which best explains the relationship between...\", \"How does X relate to Y...\"\n"
+        "- Distractors should be plausible misinterpretations that someone who skimmed the text might choose.\n"
+        "- Do NOT ask about document structure, table layout, section headings, or where information is located.\n"
+        "- Do NOT ask for simple recall of a single fact."
+    ),
+    "advanced": (
+        "ADVANCED — Analysis & Inference:\n"
+        "- Ask the reader to synthesize, evaluate, or draw conclusions about mental-health concepts that go beyond what is explicitly stated.\n"
+        "- The correct answer requires combining multiple ideas from the excerpt or reasoning about implications for classroom practice.\n"
+        "- Use question stems like: \"What can be inferred about...\", \"Which limitation is implied by...\", \"How might this finding affect a teacher's approach to...\"\n"
+        "- Distractors must be strong — they should represent common misconceptions or partially correct reasoning about student well-being.\n"
+        "- Do NOT ask about document structure, table layout, section headings, or where information is located.\n"
+        "- Do NOT ask questions whose answer can be found verbatim in the excerpt."
+    ),
+}
 
 # One MCQ from a single excerpt.
 # Required JSON fields:
@@ -32,13 +67,9 @@ Rules:
 - Exactly ONE correct answer; respond with letter only in "correct".
 - "why" must be a complete sentence, max 140 characters, grounded in the excerpt.
 - "evidence" must be a single contiguous sentence copied VERBATIM from the excerpt (no paraphrasing, no added words, no ellipses), 20–240 characters, that a reader can point to as the justification for the correct answer.
-- You are part of a set of questions where approximately {application_share}% should involve applying the concept, not just recalling facts.
+Difficulty level: {difficulty_label}
 
-Difficulty Settings (use these to guide tone and depth):
-- Context span: {context_span}
-- Distractor strength: {distractor_strength}
-- Application share: {application_share}
-
+{difficulty_instructions}
 
 Return JSON:
 {{
@@ -68,12 +99,9 @@ Rules:
 - options must be exactly ["Yes","No"].
 - "why" must be a complete sentence, max 100 characters, grounded in the excerpt.
 - "evidence" must be a single contiguous sentence copied VERBATIM from the excerpt (no paraphrasing, no added words, no ellipses), 20–240 characters, that a reader can point to as the justification for the correct answer.
-- You are part of a set of questions where approximately {application_share}% should involve applying the concept, not just recalling facts.
+Difficulty level: {difficulty_label}
 
-Difficulty Settings (use these to guide tone and depth):
-- Context span: {context_span}
-- Distractor strength: {distractor_strength}
-- Application share: {application_share}
+{difficulty_instructions}
 
 Return JSON:
 {{

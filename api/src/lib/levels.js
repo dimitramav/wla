@@ -11,21 +11,20 @@
  *      - yesno {number}    Number of yes/no questions
  *
  *  - difficulty_profile: Object controlling difficulty characteristics
- *      - context_span {number}        How many contextual items/steps are included (integer)
- *      - distractor_strength {number} How strong/convincing the incorrect options are (integer, higher = harder)
- *      - application_share {number}   Fraction between 0 and 1 indicating proportion of application-style questions
+ *      - difficulty_label {string}    "beginner" | "intermediate" | "advanced" — maps to
+ *        cognitive-level instructions in services/llm/prompts.py DIFFICULTY_INSTRUCTIONS
  */
 export const LEVELS = {
     1: {
         mix: { mcq: 7, yesno: 3 },
-        difficulty_profile: { context_span: 1, distractor_strength: 1, application_share: 0.2 },
+        difficulty_profile: { difficulty_label: "beginner" },
     },
     2: {
         mix: { mcq: 8, yesno: 2 },
-        difficulty_profile: { context_span: 2, distractor_strength: 2, application_share: 0.5 },
+        difficulty_profile: { difficulty_label: "intermediate" },
     },
     3: {
         mix: { mcq: 9, yesno: 1 },
-        difficulty_profile: { context_span: 2, distractor_strength: 3, application_share: 0.7 },
+        difficulty_profile: { difficulty_label: "advanced" },
     },
 };

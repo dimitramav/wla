@@ -255,12 +255,7 @@ def main():
     for set_idx in range(args.n_sets):
         for level in LEVELS:
             keywords = load_level_keywords(args.topic, level)
-            level_map = {"beginner": "1", "intermediate": "2", "advanced": "3"}
-            difficulty_profile = {
-                "context_span": int(level_map.get(level, "1")),
-                "distractor_strength": int(level_map.get(level, "1")),
-                "application_share": 0.0 if level == "beginner" else 0.3 if level == "intermediate" else 0.6,
-            }
+            difficulty_profile = {"difficulty_label": level}
             # Generate n_per_kw questions per keyword for even coverage
             for kw_idx, kw in enumerate(keywords):
                 call_num += 1
