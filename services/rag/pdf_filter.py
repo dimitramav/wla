@@ -84,6 +84,18 @@ def _clean_markdown(text: str) -> str:
     text = re.sub(r'<!--\s*image\s*-->', '', text)
     # Remove standalone image links ![...](...)
     text = re.sub(r'!\[[^\]]*\]\([^)]*\)', '', text)
+    # Remove copyright / licensing boilerplate lines
+    text = re.sub(
+        r'^.*(?:Creative Commons|CC\s*BY|Licensee MDPI|open access article|'
+        r'distributed under the terms and conditions|creativecommons\.org).*$',
+        '', text, flags=re.MULTILINE | re.IGNORECASE,
+    )
+    # Remove author affiliation blocks (name + university/department lines)
+    text = re.sub(
+        r'^.*(?:Department of|Faculty of|School of|Institute of|University of|'
+        r'Correspondence:|E-mail:|ORCID:).*$',
+        '', text, flags=re.MULTILINE | re.IGNORECASE,
+    )
     # Collapse runs of 3+ blank lines to 2
     text = re.sub(r'\n{3,}', '\n\n', text)
     return text.strip()

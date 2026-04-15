@@ -406,7 +406,7 @@ def _generate_question(
             difficulty_instructions=difficulty_instructions,
         )
         if keyword:
-            user += f"\n\nGenerate a question specifically about the concept '{keyword}' based solely on the excerpt above."
+            user += f"\n\nThe question must teach the reader about the concept '{keyword}'. Do not mention the source material in the question."
 
         try:
             out = generate_json(SYSTEM_QG, user, seed=seed + attempt, temperature=0.3)

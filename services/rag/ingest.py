@@ -49,6 +49,23 @@ def _is_quality_chunk(text: str) -> bool:
     if stat_chars > 5 and stat_chars > len(clean) / 30:
         return False
 
+    # Reject chunks dominated by copyright/licensing boilerplate
+    lower = clean.lower()
+    if any(term in lower for term in (
+        "creative commons", "licensee mdpi", "open access article",
+        "distributed under the terms and conditions",
+    )):
+        return False
+
+    # Reject chunks that are mostly author affiliations / metadata
+    affil_lines = len(re.findall(
+        r'(?:Department of|Faculty of|School of|Institute of|University of|'
+        r'Correspondence:|E-mail:|ORCID:)',
+        text, flags=re.IGNORECASE,
+    ))
+    if affil_lines >= 3:
+        return False
+
     return True
 
 # Ingest a topic into the vector store
