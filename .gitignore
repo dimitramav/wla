@@ -66,6 +66,7 @@ content/**/*.PDF
 
 # Benchmark results (generated output)
 services/benchmarks/results/*.csv
+services/benchmarks/results/excel/
 
 # Coverage / tooling
 coverage/
