@@ -67,7 +67,7 @@ def build_ollama_judge(model: str = "mistral:7b-instruct-q4_0", base_url: str = 
         llm = ChatOllama(
             model=model,
             base_url=base_url,
-            timeout=300,
+            timeout=600,
         )
         return LangchainLLMWrapper(llm)
     except Exception as e:

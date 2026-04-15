@@ -44,22 +44,40 @@ The `rank_bm25` library is used for the BM25 component. RRF determines chunk ord
 
 ### Design principles
 
-The evaluation uses 10 manually curated questions, each:
+The evaluation uses 15 manually curated questions, each:
 
 1. **Grounded in a specific corpus passage** — the answer must exist verbatim or paraphrased in an identified PDF
 2. **Paired with a ground-truth answer** — extracted from the source passage and verified by the researcher
-3. **Tagged with taxonomy keywords** — matching the platform's keyword hierarchy in `keywords.yaml`, ensuring the benchmark uses the same retrieval path as the production system
-4. **Spanning both document types** — practitioner guides and academic papers, to test retrieval across the corpus's heterogeneous writing styles
+3. **Tagged with exactly one taxonomy keyword** — matching the platform's keyword hierarchy in `keywords.yaml`, ensuring the benchmark tests retrieval the same way the production system queries it (one keyword per retrieval call)
+4. **Aligned to the keyword's difficulty level** — the question's cognitive demand matches the level of its keyword (see "Difficulty alignment" below)
+5. **Spanning both document types** — practitioner guides and academic papers, to test retrieval across the corpus's heterogeneous writing styles
 
-### Why 10 questions
+### Why 15 questions
 
-The golden set is intentionally small for the following reasons:
+The golden set is sized to balance coverage against curation cost:
 
 - Each question requires manual verification against the source PDF, making large sets impractical for a single researcher
-- The benchmark runs each question against 12 configurations, producing 120 evaluation rows — sufficient to identify consistent trends across configurations
+- 15 questions ensure exactly one question per keyword in the taxonomy (15 keywords across 3 difficulty levels), giving the benchmark complete and uniform coverage of the keyword space
+- The benchmark runs each question against 12 configurations, producing 180 evaluation rows — sufficient to identify consistent trends across configurations
 - RAGAS evaluation requires an LLM judge call per question per configuration, making larger sets computationally expensive with local inference
 
-The trade-off is that 10 questions is insufficient for statistical significance testing. The benchmark identifies consistent trends and directional findings, not statistically rigorous claims. A larger golden set (50+) would be needed for significance testing and is noted as future work.
+The trade-off is that 15 questions is still insufficient for statistical significance testing. The benchmark identifies consistent trends and directional findings, not statistically rigorous claims. A larger golden set (50+) would be needed for significance testing and is noted as future work.
+
+### Keyword taxonomy and difficulty progression
+
+The keyword taxonomy (`content/school_anxiety/keywords.yaml`) is designed so that keywords within each level share a consistent cognitive demand, and levels form a clear progression:
+
+**Level 1 — Beginner (recognition and recall).** Keywords name concrete, observable phenomena that a teacher can see or name without specialist training: `non-attendance`, `bullying`, `anxiety symptoms`, `self-esteem`, `wellbeing`. These are everyday concepts with high frequency across the corpus (e.g. `bullying` appears 171 times across 4 PDFs, `wellbeing` appears in 7/8 PDFs). Golden questions at this level ask "what is" or "what are" — testing whether the teacher can identify and describe the concept.
+
+**Level 2 — Intermediate (understanding and application).** Keywords name strategies, relationships, and actionable frameworks that require understanding how concepts connect: `mental health literacy`, `help-seeking`, `coping`, `protective factors`, `early intervention`. These require knowing what to do and when. Golden questions at this level ask "how does X work" or "how can a teacher apply Y" — testing whether the teacher can explain mechanisms and apply strategies.
+
+**Level 3 — Advanced (analysis and synthesis).** Keywords name research constructs, systemic concepts, and theoretical frameworks that require critical evaluation of evidence: `emotional regulation`, `resilience`, `school-based intervention`, `risk factor`, `family cohesion`. These appear primarily in academic papers (e.g. `emotional regulation` from the OECD psychometric model in Huttunen et al. 2025, `family cohesion` from Olson's FACES-III in Farmakopoulou et al. 2024). Golden questions at this level ask "why does X happen" or "what does this imply" — testing whether the teacher can analyse relationships, evaluate evidence, and synthesise across concepts.
+
+**A note on adjacent concepts across levels.** Some keywords span levels in everyday usage — for example, `coping` (level 2) and `emotional regulation` (level 3) are related. The level placement is justified by how the corpus treats them, not by the terms in isolation. `Coping` in the corpus refers to practical strategies a teacher can teach (e.g. Anna Freud's "challenge the thought" technique), while `emotional regulation` refers to the OECD psychometric construct (stress resistance, optimism, emotional control as latent profile dimensions). The distinction is between actionable knowledge and analytical understanding of research.
+
+### Corpus grounding
+
+All 15 keywords were selected to have strong coverage in the corpus — every keyword appears in at least one PDF with sufficient frequency for the embedding model to retrieve relevant chunks. This was verified empirically by searching the full text of all 8 PDFs for each keyword term. Keywords that appeared in the taxonomy but had zero or near-zero matches in the corpus (e.g. the original taxonomy's `cognitive restructuring`, `autonomic arousal`, `graduated exposure`) were replaced with terms that the corpus actually discusses.
 
 ### Curation process
 
@@ -83,13 +101,13 @@ This metric addresses the limitation of cosine similarity by using a language mo
 
 **Evaluation LLM:** Mistral 7B Instruct (Q4_0 quantisation) via local Ollama. Using the production model as the RAGAS judge creates a potential self-assessment bias — the same model that would generate questions from these chunks is also judging their relevance. This was accepted as a pragmatic trade-off for Phase 6: the LLM generation benchmark (Phase 7) addresses this by using a separate, larger judge model (Google Gemini 1.5 Flash).
 
-**Evaluation configuration:** Sequential evaluation (`max_workers=1`) against a local Ollama instance. Batch evaluation per configuration (10 questions per RAGAS call) rather than individual calls, reducing Ollama overhead.
+**Evaluation configuration:** Sequential evaluation (`max_workers=1`) against a local Ollama instance. Batch evaluation per configuration (15 questions per RAGAS call) rather than individual calls, reducing Ollama overhead.
 
 ---
 
 ## 5. Output Format
 
-Results are written to `results/rag_YYYYMMDD_HHMMSS.csv` — one row per question per configuration (120 rows total).
+Results are written to `results/rag_YYYYMMDD_HHMMSS.csv` — one row per question per configuration (180 rows total).
 
 | Column | Type | Description |
 |--------|------|-------------|

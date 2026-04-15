@@ -53,10 +53,9 @@ OLLAMA_URL = os.getenv("LLM_URL", "http://localhost:11434")
 # ---------------------------------------------------------------------------
 # Prompt template — system prompt is imported from production (llm.prompts).
 # The user template is intentionally a simplified version of
-# llm.prompts.USER_QG_MC_TEMPLATE: it strips the adaptive-difficulty knobs
-# (application_share, context_span, distractor_strength) so the benchmark
-# measures baseline generator quality at a fixed, neutral prompt without
-# the adaptive system as a confound.
+# llm.prompts.USER_QG_MC_TEMPLATE: it strips the adaptive-difficulty
+# instructions so the benchmark measures baseline generator quality at a
+# fixed, neutral prompt without the adaptive system as a confound.
 # ---------------------------------------------------------------------------
 USER_PROMPT_TEMPLATE = """Write exactly ONE multiple-choice question from this excerpt.
 
@@ -133,7 +132,7 @@ def generate_question(model_tag: str, contexts: list[str]) -> tuple[str, float]:
     }
 
     start = time.time()
-    r = requests.post(f"{OLLAMA_URL}/v1/chat/completions", json=payload, timeout=180)
+    r = requests.post(f"{OLLAMA_URL}/v1/chat/completions", json=payload, timeout=600)
     latency = time.time() - start
 
     r.raise_for_status()
@@ -261,7 +260,7 @@ def evaluate_with_rubric(rows: list, judge_llm) -> list[dict]:
 # Main
 # ---------------------------------------------------------------------------
 
-def run_benchmarks(rag_csv_path: str | None = None):
+def run_benchmarks(rag_csv_path: str | None = None, resume_from: int = 1):
     csv_path = find_latest_csv("rag", rag_csv_path)
     rag_rows = load_csv(csv_path)
 
@@ -278,6 +277,8 @@ def run_benchmarks(rag_csv_path: str | None = None):
     print(f"RAG rows    : {n_questions} ({n_configs} configs × {n_questions // max(n_configs, 1)} questions)")
     print(f"Generators  : {n_models} models")
     print(f"Total evals : {n_questions * n_models}")
+    if resume_from > 1:
+        print(f"Resuming    : from model {resume_from}/{n_models}")
     print("=" * 60)
 
     # Build Gemini judge
@@ -293,6 +294,10 @@ def run_benchmarks(rag_csv_path: str | None = None):
     output_csv = RESULTS_DIR / f"llm_{ts}.csv"
 
     for model_idx, model in enumerate(GENERATOR_MODELS, 1):
+        if model_idx < resume_from:
+            print(f"\n  [{model_idx}/{n_models}] {model['name']} — SKIPPED (resume)")
+            continue
+
         model_name = model["name"]
         model_tag = model["tag"]
 
@@ -464,6 +469,8 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description="WLA LLM Generation Benchmark")
     parser.add_argument("--rag-csv", help="Path to specific RAG results CSV (default: latest)")
+    parser.add_argument("--resume", type=int, default=1,
+                        help="Model number to resume from (e.g. --resume 3 skips models 1-2)")
     args = parser.parse_args()
 
-    run_benchmarks(args.rag_csv)
+    run_benchmarks(args.rag_csv, resume_from=args.resume)

@@ -52,7 +52,7 @@ For the thesis methodology, local-only execution means the results are fully rep
 
 ### Why these four and not more
 
-Four models produce a benchmark matrix of 4 generators × 12 RAG configurations × 10 golden questions = **480 evaluation rows**. This is substantial enough for thesis analysis while remaining computationally tractable with local inference. Adding more models would increase runtime linearly without proportional analytical value — the four selected models already cover three model families (Mistral, Meta, Google, Microsoft) and two size classes (3.8B vs 7–9B).
+Four models produce a benchmark matrix of 4 generators × 12 RAG configurations × 15 golden questions = **720 evaluation rows**. This is substantial enough for thesis analysis while remaining computationally tractable with local inference. Adding more models would increase runtime linearly without proportional analytical value — the four selected models already cover three model families (Mistral, Meta, Google, Microsoft) and two size classes (3.8B vs 7–9B).
 
 ### Disk management
 
@@ -77,7 +77,7 @@ These biases make it unreliable to use the same 7B models that generate quiz que
 
 1. **Scale** — a large proprietary model with evaluation quality comparable to GPT-4-class judges (Zheng et al., 2023) while avoiding the biases observed in 7B evaluators
 2. **Independence** — the judge is not one of the four generator models being evaluated, eliminating self-assessment bias entirely
-3. **Cost efficiency** — Gemini 2.5 Flash Lite is the cheapest tier of the Gemini 2.5 family and completed the 480-row evaluation for well under $1 on the paid tier, keeping the evaluation accessible for academic research. The free tier's daily cap (20 requests/day for Flash Lite) is not sufficient for a 480-row run, so a billing-enabled project is required.
+3. **Cost efficiency** — Gemini 2.5 Flash Lite is the cheapest tier of the Gemini 2.5 family and completed the 720-row evaluation for well under $1 on the paid tier, keeping the evaluation accessible for academic research. The free tier's daily cap (20 requests/day for Flash Lite) is not sufficient for a 720-row run, so a billing-enabled project is required.
 
 ### Rate limit handling
 
@@ -192,7 +192,7 @@ Initially, RAGAS evaluation ran inline at the end of each model's generation pas
 2. **Judge-availability and rate-limit risk.** Cloud judge providers can deprecate models or impose daily token caps. When inline scoring fails mid-run, the generation work is at risk of being lost. Decoupling means generation results are always saved first; scoring can be re-run independently with a different judge provider without re-running the expensive local inference stage.
 
 Separating the two stages also means:
-- **Generation is the expensive step** (~8 hours on local hardware for 480 rows). It runs once and its outputs are preserved in the CSV.
+- **Generation is the expensive step** (~15–17 hours on local hardware for 720 rows). It runs once and its outputs are preserved in the CSV.
 - **Scoring is the cheap but brittle step** (network-bound, dependent on third-party API). It can be re-run, re-tuned, or swapped for a different judge without redoing generation.
 - **Format compliance, response time, and raw outputs** are available from the moment the LLM benchmark finishes, regardless of whether RAGAS succeeds.
 
@@ -215,7 +215,23 @@ By freezing retrieval results in a CSV and feeding them to the generation benchm
 
 ## 6. Prompt Design
 
-The benchmark uses the same MCQ prompt template as the production system (`services/llm/prompts.py`) to ensure evaluation reflects real-world performance. The prompt instructs the model to:
+The benchmark shares the **system prompt** (`SYSTEM_QG`) with the production system (`services/llm/prompts.py`) but uses its own **user prompt template** (`USER_PROMPT_TEMPLATE` in `llm_benchmark.py`). The system prompt is shared so that evaluation reflects the same domain framing the production quiz uses; the user prompt differs because the benchmark must inject frozen context from the RAG CSV rather than live-retrieved chunks.
+
+### Domain-grounded system prompt
+
+The system prompt (`SYSTEM_QG`) establishes the domain context for question generation. It instructs the model that:
+
+- The audience is primary and secondary school teachers in a training programme on student mental health (school anxiety, emotional well-being, early intervention)
+- Questions must test understanding of concepts, risk factors, protective factors, interventions, or practical classroom strategies
+- Questions must NOT ask about document structure, table labels, page references, or methodology details
+- All content must come from the provided excerpt — no invented facts
+- Output must be strict JSON conforming to the requested schema
+
+This domain grounding was introduced in Run 2 (see LLM Benchmark Report §7) after Run 1 revealed that a minimal, domain-agnostic system prompt allowed generators to produce surface-level questions about document layout rather than substantive pedagogical content.
+
+### User prompt template
+
+The benchmark's `USER_PROMPT_TEMPLATE` passes the frozen excerpt, difficulty level, and difficulty-specific instructions to the generator. The difficulty instructions mirror the production prompt tiers (beginner, intermediate, advanced) and include explicit guards against document-structure questions at every level. The prompt instructs the model to:
 
 1. Generate exactly one multiple-choice question from the provided excerpt
 2. Base the question only on the excerpt (no external knowledge)
@@ -229,7 +245,7 @@ All generation uses `temperature=0` and a fixed seed (`seed=7`) for deterministi
 
 ## 7. Output Format
 
-Results are written to `results/llm_YYYYMMDD_HHMMSS.csv` — one row per question per generator model per RAG configuration (480 rows for 4 models × 120 RAG rows). `llm_benchmark.py` writes the generation columns (`raw_output`, `generated_answer`, `format_compliance`, `response_time_s`) and saves incrementally after each model. `llm_ragas_score.py` then updates the same file in place with `faithfulness`, the four rubric columns (`stem_clarity`, `distractor_plausibility`, `pedagogical_appropriateness`, `mcq_quality`), and `composite_score`, resumable at the batch level if interrupted.
+Results are written to `results/llm_YYYYMMDD_HHMMSS.csv` — one row per question per generator model per RAG configuration (720 rows for 4 models × 180 RAG rows). `llm_benchmark.py` writes the generation columns (`raw_output`, `generated_answer`, `format_compliance`, `response_time_s`) and saves incrementally after each model. `llm_ragas_score.py` then updates the same file in place with `faithfulness`, the four rubric columns (`stem_clarity`, `distractor_plausibility`, `pedagogical_appropriateness`, `mcq_quality`), and `composite_score`, resumable at the batch level if interrupted.
 
 | Column | Type | Description |
 |--------|------|-------------|

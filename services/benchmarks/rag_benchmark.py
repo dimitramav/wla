@@ -18,6 +18,7 @@ Outputs:
 
 Usage:
   cd services && python -m benchmarks.rag_benchmark
+  cd services && python -m benchmarks.rag_benchmark --resume 5
 
 Requirements:
   - All services/requirements.txt dependencies installed in the active venv
@@ -25,13 +26,20 @@ Requirements:
     (if Ollama is not running, context_relevancy scores are recorded as None)
 """
 
+import argparse
 import csv
+import requests
 import sys
 from pathlib import Path
 from datetime import datetime, timezone
 
 # Allow direct imports from the services/ package
 sys.path.insert(0, str(Path(__file__).parent.parent))
+
+from dotenv import load_dotenv
+load_dotenv(Path(__file__).parent.parent.parent / ".env")
+
+import numpy as np
 
 from benchmarks.config import (
     CHUNK_CONFIGS,
@@ -42,7 +50,7 @@ from benchmarks.config import (
 )
 from benchmarks.fixtures import GOLDEN_QUESTIONS
 from benchmarks.io import RESULTS_DIR
-from benchmarks.scoring.judge import build_ollama_judge
+from benchmarks.scoring.judge import build_gemini_judge, build_ollama_judge
 
 
 # ---------------------------------------------------------------------------
@@ -74,7 +82,8 @@ def evaluate_batch_with_ragas(
 
         # Ollama serves one request at a time — sequential evaluation
         # prevents 9/10 jobs timing out from concurrent queuing.
-        run_cfg = RunConfig(max_workers=1, timeout=300)
+        # 600s timeout to accommodate CPU-only inference.
+        run_cfg = RunConfig(max_workers=1, timeout=600)
 
         data = {
             "question": questions,
@@ -96,33 +105,79 @@ def evaluate_batch_with_ragas(
 # Main benchmark loop
 # ---------------------------------------------------------------------------
 
-def run_benchmarks():
+def _keep_ollama_alive(model: str = "mistral:7b-instruct-q4_0"):
+    """Tell Ollama to keep the model loaded for 24h to prevent unloading mid-run."""
+    try:
+        requests.post(
+            "http://localhost:11434/api/generate",
+            json={"model": model, "prompt": "", "keep_alive": "24h"},
+            timeout=120,
+        )
+        print(f"Ollama keep_alive set to 24h for {model}")
+    except Exception as e:
+        print(f"  ⚠ Could not set keep_alive: {e}")
+
+
+def _append_rows_to_csv(output_csv: Path, rows: list, write_header: bool):
+    """Append rows to the CSV file incrementally."""
+    with open(output_csv, "a", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=RAG_CSV_FIELDS)
+        if write_header:
+            writer.writeheader()
+        writer.writerows(rows)
+
+
+def run_benchmarks(resume_from: int = 1):
     from rag.ingest import ingest_topic
     from rag.vecstore import collection_for
     from rag.qg import _ordered_chunks, _pick_plan_by_keywords_hybrid, _get_emb_fn
+
+    total_configs = len(EMBEDDING_MODELS) * len(CHUNK_CONFIGS) * len(RETRIEVAL_TYPES)
 
     print("=" * 60)
     print("WLA RAG Retrieval Benchmarking Suite")
     print(f"Topic       : {TOPIC}")
     print(f"Questions   : {len(GOLDEN_QUESTIONS)} (manually curated, corpus-grounded)")
     print(f"Configs     : {len(EMBEDDING_MODELS)} models x {len(CHUNK_CONFIGS)} chunk sizes x {len(RETRIEVAL_TYPES)} retrieval types")
-    print(f"Total rows  : {len(GOLDEN_QUESTIONS) * len(EMBEDDING_MODELS) * len(CHUNK_CONFIGS) * len(RETRIEVAL_TYPES)}")
+    print(f"Total rows  : {len(GOLDEN_QUESTIONS) * total_configs}")
+    if resume_from > 1:
+        print(f"Resuming    : from config {resume_from}/{total_configs}")
     print("=" * 60)
 
     ragas_llm = build_ollama_judge()
     if ragas_llm:
         print("RAGAS: Ollama configured (mistral:7b-instruct-q4_0)")
+        _keep_ollama_alive()
     else:
         print("RAGAS: Ollama unavailable — context_relevancy will be None")
 
-    results = []
-    total_configs = len(EMBEDDING_MODELS) * len(CHUNK_CONFIGS) * len(RETRIEVAL_TYPES)
-    config_num = 0
+    # Incremental CSV — timestamped file, write header once
+    RESULTS_DIR.mkdir(parents=True, exist_ok=True)
+    ts = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+    output_csv = RESULTS_DIR / f"rag_{ts}.csv"
+    header_written = False
 
+    # Build flat config list so numbering is always correct
+    all_configs = []
     for emb_model in EMBEDDING_MODELS:
-        model_label = emb_model.split("/")[-1]
-
         for chunk_size, chunk_overlap in CHUNK_CONFIGS:
+            for retrieval_type in RETRIEVAL_TYPES:
+                all_configs.append((emb_model, chunk_size, chunk_overlap, retrieval_type))
+
+    results = []
+    prev_ingest_key = None
+    col = _fn = pool = None
+
+    for config_num, (emb_model, chunk_size, chunk_overlap, retrieval_type) in enumerate(all_configs, 1):
+        model_label = emb_model.split("/")[-1]
+        ingest_key = (emb_model, chunk_size, chunk_overlap)
+
+        if config_num < resume_from:
+            print(f"\n  [{config_num}/{total_configs}] retrieval={retrieval_type}  — SKIPPED (resume)")
+            continue
+
+        # Only re-ingest when model or chunk config changes
+        if ingest_key != prev_ingest_key:
             print(f"\n{'─' * 60}")
             print(f"Ingesting: {model_label}  chunks={chunk_size}/{chunk_overlap}")
 
@@ -138,6 +193,7 @@ def run_benchmarks():
                 print(f"  chunks_upserted={ingest_result.get('chunks_upserted', 0)}  hash={docset_hash[:8]}")
             except Exception as e:
                 print(f"  Ingestion FAILED: {e}")
+                prev_ingest_key = None
                 continue
 
             col = collection_for(TOPIC, emb_model)
@@ -146,75 +202,90 @@ def run_benchmarks():
 
             if not pool:
                 print("  No chunks found in collection — skipping")
+                prev_ingest_key = None
                 continue
 
-            for retrieval_type in RETRIEVAL_TYPES:
-                config_num += 1
-                config_id = f"{model_label}_{chunk_size}_{chunk_overlap}_{retrieval_type}"
-                print(f"\n  [{config_num}/{total_configs}] retrieval={retrieval_type}")
+            prev_ingest_key = ingest_key
 
-                # --- Retrieve for all questions first ---
-                batch_questions, batch_contexts, batch_ground_truths = [], [], []
-                batch_rows = []
+            # Pre-compute chunk embeddings once per ingestion (reused across retrieval types + questions)
+            print(f"  Pre-computing {len(pool)} chunk embeddings...")
+            chunk_vecs = np.array([_fn(txt)[0] for txt, _ in pool])
+            print(f"  ✓ Chunk embeddings cached")
 
-                for item in GOLDEN_QUESTIONS:
-                    question = item["question"]
-                    ground_truth = item["ground_truth"]
-                    keywords = item["keywords"]
+            # Pre-compute keyword embeddings for all golden questions
+            all_kws = set()
+            for item in GOLDEN_QUESTIONS:
+                all_kws.update(item["keywords"])
+            kw_vecs_cache = {kw: _fn(kw)[0] for kw in all_kws}
+            print(f"  ✓ {len(kw_vecs_cache)} keyword embeddings cached")
 
-                    try:
-                        plan, scores = _pick_plan_by_keywords_hybrid(
-                            pool,
-                            keywords,
-                            needed=5,
-                            retrieval_type=retrieval_type,
-                            _emb_fn=_fn,
-                        )
-                        contexts = [txt for txt, _, _ in plan]
-                        top_score = round(max(scores), 4) if scores else None
-                    except Exception as e:
-                        print(f"    Retrieval ERROR: {e}")
-                        contexts, top_score = [], None
+        if pool is None:
+            continue
 
-                    batch_questions.append(question)
-                    batch_contexts.append(contexts)
-                    batch_ground_truths.append(ground_truth)
-                    batch_rows.append({
-                        "timestamp": datetime.now(timezone.utc).isoformat(),
-                        "emb_model": emb_model,
-                        "chunk_size": chunk_size,
-                        "chunk_overlap": chunk_overlap,
-                        "retrieval_type": retrieval_type,
-                        "question": question,
-                        "ground_truth": ground_truth,
-                        "keywords_used": "|".join(keywords),
-                        "num_contexts": len(contexts),
-                        "contexts_text": "|||".join(contexts),
-                        "top_score": top_score,
-                        "context_relevancy": None,
-                    })
+        config_id = f"{model_label}_{chunk_size}_{chunk_overlap}_{retrieval_type}"
+        print(f"\n  [{config_num}/{total_configs}] retrieval={retrieval_type}")
 
-                # --- RAGAS: one batch call per config ---
-                print(f"    Running RAGAS batch ({len(batch_questions)} questions)...")
-                ragas_batch = evaluate_batch_with_ragas(
-                    batch_questions, batch_contexts, batch_ground_truths, ragas_llm
+        # --- Retrieve for all questions first ---
+        batch_questions, batch_contexts, batch_ground_truths = [], [], []
+        batch_rows = []
+
+        for item in GOLDEN_QUESTIONS:
+            question = item["question"]
+            ground_truth = item["ground_truth"]
+            keywords = item["keywords"]
+
+            try:
+                plan, scores = _pick_plan_by_keywords_hybrid(
+                    pool,
+                    keywords,
+                    needed=5,
+                    retrieval_type=retrieval_type,
+                    _emb_fn=_fn,
+                    _chunk_vecs_cache=chunk_vecs,
+                    _kw_vecs_cache=kw_vecs_cache,
                 )
-                for i, row in enumerate(batch_rows):
-                    row["context_relevancy"] = ragas_batch[i].get("context_relevancy")
-                    print(f"    ✓ [{i+1}/10] score={row['top_score']}  ragas={row['context_relevancy']}")
+                contexts = [txt for txt, _, _ in plan]
+                top_score = round(max(scores), 4) if scores else None
+            except Exception as e:
+                print(f"    Retrieval ERROR: {e}")
+                contexts, top_score = [], None
 
-                results.extend(batch_rows)
+            batch_questions.append(question)
+            batch_contexts.append(contexts)
+            batch_ground_truths.append(ground_truth)
+            batch_rows.append({
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "emb_model": emb_model,
+                "chunk_size": chunk_size,
+                "chunk_overlap": chunk_overlap,
+                "retrieval_type": retrieval_type,
+                "question": question,
+                "ground_truth": ground_truth,
+                "keywords_used": "|".join(keywords),
+                "num_contexts": len(contexts),
+                "contexts_text": "|||".join(contexts),
+                "top_score": top_score,
+                "context_relevancy": None,
+            })
 
-    # Write CSV with timestamped filename
+        # --- RAGAS: one batch call per config ---
+        print(f"    Running RAGAS batch ({len(batch_questions)} questions)...")
+        ragas_batch = evaluate_batch_with_ragas(
+            batch_questions, batch_contexts, batch_ground_truths, ragas_llm
+        )
+        for i, row in enumerate(batch_rows):
+            row["context_relevancy"] = ragas_batch[i].get("context_relevancy")
+            print(f"    ✓ [{i+1}/{len(GOLDEN_QUESTIONS)}] score={row['top_score']}  ragas={row['context_relevancy']}")
+
+        # --- Save incrementally after each config ---
+        _append_rows_to_csv(output_csv, batch_rows, write_header=not header_written)
+        header_written = True
+        print(f"    ✓ Config {config_num}/{total_configs} saved to {output_csv.name}")
+
+        results.extend(batch_rows)
+
     print(f"\n{'=' * 60}")
     if results:
-        RESULTS_DIR.mkdir(parents=True, exist_ok=True)
-        ts = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
-        output_csv = RESULTS_DIR / f"rag_{ts}.csv"
-        with open(output_csv, "w", newline="", encoding="utf-8") as f:
-            writer = csv.DictWriter(f, fieldnames=RAG_CSV_FIELDS)
-            writer.writeheader()
-            writer.writerows(results)
         print(f"Results written to {output_csv}  ({len(results)} rows)")
     else:
         print("No results to write — check ingestion errors above.")
@@ -223,4 +294,8 @@ def run_benchmarks():
 
 
 if __name__ == "__main__":
-    run_benchmarks()
+    parser = argparse.ArgumentParser(description="RAG retrieval benchmark")
+    parser.add_argument("--resume", type=int, default=1,
+                        help="Config number to resume from (e.g. --resume 5 skips configs 1-4)")
+    args = parser.parse_args()
+    run_benchmarks(resume_from=args.resume)
