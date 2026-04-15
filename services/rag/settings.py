@@ -10,7 +10,7 @@ load_dotenv(Path("../.env"))
 CONTENT_DIR   = Path(os.getenv("RAG_CONTENT_DIR", "../content"))
 CHROMA_DIR    = Path(os.getenv("RAG_CHROMA_DIR", "rag/chroma"))
 DOCSETS_META  = Path(os.getenv("RAG_DOCSETS_META", "rag/docsets.json"))
-EMB_MODEL_ID  = os.getenv("RAG_EMBEDDING_MODEL", "sentence-transformers/all-MiniLM-L6-v2")
+EMB_MODEL_ID  = os.getenv("RAG_EMBEDDING_MODEL", "sentence-transformers/all-mpnet-base-v2")
 
 CHROMA_DIR.mkdir(parents=True, exist_ok=True)
 DOCSETS_META.parent.mkdir(parents=True, exist_ok=True)

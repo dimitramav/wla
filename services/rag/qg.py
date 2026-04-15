@@ -18,6 +18,39 @@ from dataclasses import dataclass
 from .settings import EMB_MODEL_ID
 from chromadb.utils import embedding_functions
 import numpy as np
+
+# Module-level cache for chunk embeddings to avoid re-embedding on every request.
+# Keyed by (topic, docset_hash, emb_model) → np.ndarray of shape (n_chunks, dim).
+_chunk_emb_cache: Dict[Tuple[str, str, str], np.ndarray] = {}
+
+
+def warmup_chunk_cache():
+    """Load chunk embeddings from ChromaDB for all known topics at startup.
+
+    No re-embedding needed — ChromaDB already stores the vectors from ingestion.
+    """
+    from .settings import read_docsets_meta
+    meta = read_docsets_meta()
+    for topic, info in meta.items():
+        docset_hash = info.get("hash", "")
+        if not docset_hash:
+            continue
+        emb_model = EMB_MODEL_ID
+        cache_key = (topic, docset_hash, emb_model)
+        if cache_key in _chunk_emb_cache:
+            continue
+        try:
+            col = collection_for(topic, emb_model)
+            pool = _ordered_chunks(col, topic, docset_hash, include_embeddings=True)
+            if not pool:
+                continue
+            if _ordered_chunks.last_embeddings is not None:
+                _chunk_emb_cache[cache_key] = _ordered_chunks.last_embeddings
+                print(f"  [warmup] ✓ {topic} loaded from ChromaDB ({len(pool)} chunks, zero re-embedding)")
+            else:
+                print(f"  [warmup] ✗ {topic} — no embeddings in ChromaDB, will compute on first request")
+        except Exception as e:
+            print(f"  [warmup] ✗ {topic} failed: {e}")
 import heapq
 
 try:
@@ -29,7 +62,7 @@ except ImportError:
 RETRIEVAL_LOG = Path(__file__).parent.parent / "retrieval_logs.jsonl"
 
 # Configuration
-MAX_CHARS_PER_Q = 450
+MAX_CHARS_PER_Q = 900
 POOL_PER_SOURCE = 30
 POOL_MIN = 200
 MAX_RETRIES = 2
@@ -70,7 +103,7 @@ YN_TEMPLATE = QuestionTemplate(
     options=["Yes", "No"]
 )
 
-def _ordered_chunks(col, topic: str, docset_hash: str) -> List[Tuple[str, Dict]]:
+def _ordered_chunks(col, topic: str, docset_hash: str, include_embeddings: bool = False) -> List[Tuple[str, Dict]]:
     """Returns (text, meta) pairs round-robin across sources.
 
     Each source contributes its chunks in (page, chunk_index) order; sources
@@ -78,17 +111,26 @@ def _ordered_chunks(col, topic: str, docset_hash: str) -> List[Tuple[str, Dict]]
     document exhausts the pool budget. The pool budget scales with the number
     of sources (POOL_PER_SOURCE per doc, floored at POOL_MIN) so retrieval
     can reach the body of each document, not just the abstract/intro.
+
+    When include_embeddings=True, also fetches stored embeddings from ChromaDB
+    and stores them on _ordered_chunks.last_embeddings (indexed same as the
+    returned pool) so callers can skip re-embedding.
     """
+    includes = ["documents", "metadatas"]
+    if include_embeddings:
+        includes.append("embeddings")
     records = col.get(
         where={"$and": [{"topic": topic}, {"docset_hash": docset_hash}]},
-        include=["documents", "metadatas"]
+        include=includes,
     )
     docs = records.get("documents", []) or []
     metas = records.get("metadatas", []) or []
+    raw_embeddings = records.get("embeddings") if include_embeddings else None
 
-    by_source: Dict[str, List[Tuple[str, Dict]]] = {}
-    for txt, meta in zip(docs, metas):
-        by_source.setdefault(meta.get("source", ""), []).append((txt, meta))
+    # Build (txt, meta, original_index) triples so we can track embeddings
+    by_source: Dict[str, List[Tuple[str, Dict, int]]] = {}
+    for orig_idx, (txt, meta) in enumerate(zip(docs, metas)):
+        by_source.setdefault(meta.get("source", ""), []).append((txt, meta, orig_idx))
 
     for src in by_source:
         by_source[src].sort(key=lambda x: (
@@ -99,14 +141,24 @@ def _ordered_chunks(col, topic: str, docset_hash: str) -> List[Tuple[str, Dict]]
     sources = sorted(by_source.keys())
     pool_budget = max(POOL_MIN, POOL_PER_SOURCE * len(sources))
     pool: List[Tuple[str, Dict]] = []
+    pool_orig_indices: List[int] = []
     idx = 0
     while len(pool) < pool_budget and any(idx < len(by_source[s]) for s in sources):
         for src in sources:
             if idx < len(by_source[src]):
-                pool.append(by_source[src][idx])
+                txt, meta, orig_idx = by_source[src][idx]
+                pool.append((txt, meta))
+                pool_orig_indices.append(orig_idx)
                 if len(pool) >= pool_budget:
                     break
         idx += 1
+
+    # Store embeddings in pool order if requested
+    if raw_embeddings is not None:
+        _ordered_chunks.last_embeddings = np.array([raw_embeddings[i] for i in pool_orig_indices])
+    else:
+        _ordered_chunks.last_embeddings = None
+
     return pool
 
 # Trim text to a specified number of characters
@@ -345,11 +397,13 @@ def _generate_question(
 ) -> Dict:
     """Generate a single question with retries"""
     for attempt in range(MAX_RETRIES):
+        from llm.prompts import DIFFICULTY_INSTRUCTIONS
+        difficulty_label = dp.get("difficulty_label", "beginner") if dp else "beginner"
+        difficulty_instructions = DIFFICULTY_INSTRUCTIONS.get(difficulty_label, DIFFICULTY_INSTRUCTIONS["beginner"])
         user = template.template.format(
             excerpt=excerpt,
-            context_span=dp.get("context_span", 1),
-            distractor_strength=dp.get("distractor_strength", 1),
-            application_share=int(dp.get("application_share", 0.0) * 100)
+            difficulty_label=difficulty_label,
+            difficulty_instructions=difficulty_instructions,
         )
         if keyword:
             user += f"\n\nGenerate a question specifically about the concept '{keyword}' based solely on the excerpt above."
@@ -540,9 +594,24 @@ def generate_qg(
 
     _fn = _get_emb_fn(emb_model)
     col = collection_for(topic, emb_model)
-    pool = _ordered_chunks(col, topic, docset_hash)
+    pool = _ordered_chunks(col, topic, docset_hash, include_embeddings=True)
     if not pool:
         return {"questions": [], "promptHash": ""}
+
+    # Use embeddings from ChromaDB (already computed during ingestion) — no re-embedding needed
+    cache_key = (topic, docset_hash, emb_model or EMB_MODEL_ID)
+    if cache_key in _chunk_emb_cache:
+        chunk_vecs = _chunk_emb_cache[cache_key]
+        print(f"  Using cached chunk embeddings ({len(chunk_vecs)} chunks)")
+    elif _ordered_chunks.last_embeddings is not None:
+        chunk_vecs = _ordered_chunks.last_embeddings
+        _chunk_emb_cache[cache_key] = chunk_vecs
+        print(f"  ✓ Loaded {len(chunk_vecs)} chunk embeddings from ChromaDB (zero re-embedding)")
+    else:
+        print(f"  Computing {len(pool)} chunk embeddings (fallback)...")
+        chunk_vecs = np.array([_fn(txt)[0] for txt, _ in pool])
+        _chunk_emb_cache[cache_key] = chunk_vecs
+        print(f"  ✓ Chunk embeddings cached")
 
     mcq_n = int(mix.get("mcq", 10))
     yn_n = int(mix.get("yesno", 5))
@@ -559,6 +628,7 @@ def generate_qg(
         weak_focus_ratio=weak_focus_ratio,
         retrieval_type=retrieval_type,
         _fn=_fn,
+        _chunk_vecs_cache=chunk_vecs,
         log_retrieval=True,
         topic=topic,
     )

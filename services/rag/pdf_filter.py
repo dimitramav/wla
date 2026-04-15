@@ -34,6 +34,13 @@ _END_PATTERNS = [
     r"^Bibliography$",
 ]
 
+# Sections that are not useful for question generation
+_SKIP_SECTION_PATTERNS = [
+    r"^#+\s*(?:Acknowledgements?|Funding|Conflicts?\s+of\s+Interest|"
+    r"Author\s+Contributions?|Data\s+Availability|Abbreviations|"
+    r"Supplementary\s+Materials?|Appendix|Informed\s+Consent)\b",
+]
+
 
 def _trim_references(text: str) -> str:
     """Remove References/Bibliography section and everything after it."""
@@ -43,6 +50,43 @@ def _trim_references(text: str) -> str:
             if re.search(pat, line.strip(), flags=re.IGNORECASE):
                 return "\n".join(lines[:i]).strip()
     return text
+
+
+def _strip_boilerplate_sections(text: str) -> str:
+    """Remove academic boilerplate sections (acknowledgements, funding, etc.)."""
+    lines = text.split("\n")
+    result = []
+    skipping = False
+    for line in lines:
+        stripped = line.strip()
+        # Check if this line starts a boilerplate section
+        for pat in _SKIP_SECTION_PATTERNS:
+            if re.search(pat, stripped, flags=re.IGNORECASE):
+                skipping = True
+                break
+        # A new heading that is NOT boilerplate ends the skip
+        if skipping and re.match(r"^#+\s+", stripped):
+            is_boilerplate = False
+            for pat in _SKIP_SECTION_PATTERNS:
+                if re.search(pat, stripped, flags=re.IGNORECASE):
+                    is_boilerplate = True
+                    break
+            if not is_boilerplate:
+                skipping = False
+        if not skipping:
+            result.append(line)
+    return "\n".join(result)
+
+
+def _clean_markdown(text: str) -> str:
+    """Strip Docling artifacts and noisy markup from extracted markdown."""
+    # Remove <!-- image --> placeholders
+    text = re.sub(r'<!--\s*image\s*-->', '', text)
+    # Remove standalone image links ![...](...)
+    text = re.sub(r'!\[[^\]]*\]\([^)]*\)', '', text)
+    # Collapse runs of 3+ blank lines to 2
+    text = re.sub(r'\n{3,}', '\n\n', text)
+    return text.strip()
 
 
 # Filter and extract text from a document (PDF, MD, or TXT)
@@ -66,8 +110,10 @@ def filter_document(path: Path) -> Dict[str, Any]:
         result = converter.convert(str(path))
         md_text = result.document.export_to_markdown()
 
-        # Trim references section (not useful for question generation)
-        text = _trim_references(md_text).strip()
+        # Clean up: strip artifacts, boilerplate, and references
+        text = _clean_markdown(md_text)
+        text = _strip_boilerplate_sections(text)
+        text = _trim_references(text).strip()
 
         return {
             "text": text,
