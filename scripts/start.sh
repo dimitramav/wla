@@ -111,6 +111,31 @@ if [[ "$START_EXPRESS" == true ]]; then
   wait_for "Express" "http://localhost:3001/health" 30
 fi
 
+# ── 2b. Ollama + model check ──────────────────────────────────────────────────
+
+OLLAMA_MODEL="gemma2:9b-instruct-q4_0"
+
+if [[ "$START_FASTAPI" == true ]]; then
+  if ! command -v ollama &>/dev/null; then
+    die "ollama is not installed"
+  fi
+
+  if ! curl -sf --max-time 2 "http://localhost:11434/api/tags" >/dev/null 2>&1; then
+    log "Starting Ollama..."
+    ollama serve > /tmp/wla-ollama.log 2>&1 &
+    record_pid ollama $!
+    wait_for "Ollama" "http://localhost:11434/api/tags" 15
+  fi
+
+  if ! ollama list 2>/dev/null | grep -q "$OLLAMA_MODEL"; then
+    log "$OLLAMA_MODEL not found — pulling..."
+    ollama pull "$OLLAMA_MODEL" || die "Failed to pull $OLLAMA_MODEL"
+    log "$OLLAMA_MODEL pulled successfully"
+  else
+    log "Ollama model $OLLAMA_MODEL is available"
+  fi
+fi
+
 # ── 3. FastAPI RAG service (port 8000) ─────────────────────────────────────────
 
 if [[ "$START_FASTAPI" == true ]]; then
@@ -155,8 +180,9 @@ log ""
 log "Services UP:"
 [[ "$START_MONGO"   == true ]] && log "  MongoDB  → localhost:27017"
 [[ "$START_EXPRESS" == true ]] && log "  Express  → http://localhost:3001"
+[[ "$START_FASTAPI" == true ]] && log "  Ollama   → http://localhost:11434  ($OLLAMA_MODEL)"
 [[ "$START_FASTAPI" == true ]] && log "  FastAPI  → http://localhost:8000"
 [[ "$START_VITE"    == true ]] && log "  Vite     → http://localhost:5173"
 log ""
-log "Logs: /tmp/wla-express.log  /tmp/wla-fastapi.log  /tmp/wla-vite.log"
+log "Logs: /tmp/wla-express.log  /tmp/wla-fastapi.log  /tmp/wla-vite.log  /tmp/wla-ollama.log"
 log "Stop: ./scripts/stop.sh"
