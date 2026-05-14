@@ -11,11 +11,64 @@
 import re
 import logging
 from pathlib import Path
-from typing import Dict, Any
+from typing import Dict, Any, List
 
 from docling.document_converter import DocumentConverter
 
 logger = logging.getLogger(__name__)
+
+
+def _extract_structured(document) -> List[Dict[str, Any]]:
+    """Return per-element {text, page, bbox} from a DoclingDocument.
+
+    bbox is normalized to fractions of the page in TOPLEFT origin (l, t, r, b)
+    so the frontend can draw highlight rectangles directly without a coordinate
+    flip. pdf.js renders pages with y=0 at the top.
+    """
+    items: List[Dict[str, Any]] = []
+    page_sizes: Dict[int, Any] = {}
+    try:
+        for page_no, page in document.pages.items():
+            size = getattr(page, "size", None)
+            if size is not None:
+                page_sizes[page_no] = (float(size.width), float(size.height))
+    except Exception:
+        pass
+
+    for text_item in getattr(document, "texts", []) or []:
+        text = (getattr(text_item, "text", "") or "").strip()
+        if not text:
+            continue
+        for prov in getattr(text_item, "prov", []) or []:
+            page = getattr(prov, "page_no", None)
+            bbox = getattr(prov, "bbox", None)
+            if page is None or bbox is None:
+                continue
+            size = page_sizes.get(page)
+            if not size:
+                continue
+            pw, ph = size
+            if pw <= 0 or ph <= 0:
+                continue
+            l = float(bbox.l) / pw
+            r = float(bbox.r) / pw
+            # Docling defaults to BOTTOMLEFT origin for PDF; flip if needed.
+            origin = getattr(bbox, "coord_origin", None)
+            origin_name = getattr(origin, "name", str(origin or "")).upper()
+            if "BOTTOM" in origin_name:
+                t = 1.0 - (float(bbox.t) / ph)
+                b = 1.0 - (float(bbox.b) / ph)
+            else:
+                t = float(bbox.t) / ph
+                b = float(bbox.b) / ph
+            if t > b:
+                t, b = b, t
+            items.append({
+                "text": text,
+                "page": int(page),
+                "bbox": [round(l, 6), round(t, 6), round(r, 6), round(b, 6)],
+            })
+    return items
 
 # Lazy-initialized converter (heavy object — load once)
 _converter = None
@@ -114,6 +167,7 @@ def filter_document(path: Path) -> Dict[str, Any]:
             "notes": "text_file",
             "skipped_pages": [],
             "preview": text[:500],
+            "structured": [],
         }
 
     # PDF path — use Docling for ML-based extraction
@@ -121,6 +175,7 @@ def filter_document(path: Path) -> Dict[str, Any]:
         converter = _get_converter()
         result = converter.convert(str(path))
         md_text = result.document.export_to_markdown()
+        structured = _extract_structured(result.document)
 
         # Clean up: strip artifacts, boilerplate, and references
         text = _clean_markdown(md_text)
@@ -132,6 +187,7 @@ def filter_document(path: Path) -> Dict[str, Any]:
             "notes": "docling",
             "skipped_pages": [],
             "preview": text[:500],
+            "structured": structured,
         }
     except Exception as e:
         logger.error(f"Docling failed for {path.name}: {e}")
@@ -140,4 +196,5 @@ def filter_document(path: Path) -> Dict[str, Any]:
             "notes": f"docling_error: {e}",
             "skipped_pages": [],
             "preview": "",
+            "structured": [],
         }

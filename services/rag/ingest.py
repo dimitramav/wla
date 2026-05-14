@@ -14,11 +14,12 @@
  * - Metadata management utilities.
 """
 
-import hashlib, logging, re, time
+import hashlib, json, logging, re, time
 from typing import Dict, Any, List
 from fastapi import HTTPException
 from .settings import (
-    collect_documents, compute_docset_hash, read_docsets_meta, write_docsets_meta
+    collect_documents, compute_docset_hash, read_docsets_meta, write_docsets_meta,
+    DOCLING_CACHE_DIR,
 )
 from .pdf_filter import filter_document
 from .vecstore import make_splitter, collection_for
@@ -122,6 +123,15 @@ def ingest_topic(topic: str, force: bool = False, chunk_size: int = 800, chunk_o
         text = filt["text"]
         if not text:
             continue
+
+        structured = filt.get("structured") or []
+        if structured:
+            cache_path = DOCLING_CACHE_DIR / topic / f"{p.name}.json"
+            cache_path.parent.mkdir(parents=True, exist_ok=True)
+            cache_path.write_text(
+                json.dumps({"file": p.name, "elements": structured}, ensure_ascii=False),
+                encoding="utf-8",
+            )
 
         chunks = splitter.split_text(text)
         skipped = 0

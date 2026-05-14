@@ -1,83 +1,76 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { Worker, Viewer } from '@react-pdf-viewer/core';
 import { defaultLayoutPlugin } from '@react-pdf-viewer/default-layout';
+import { API_BASE } from '../../api/client';
 import '@react-pdf-viewer/core/lib/styles/index.css';
 import '@react-pdf-viewer/default-layout/lib/styles/index.css';
 
+const workerUrl = "https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.worker.min.js";
 
 const SingleDocument = ({ url, highlightRequest }) => {
     const defaultLayoutPluginInstance = defaultLayoutPlugin();
-    const workerUrl = "https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.worker.min.js";
-
-    const searchPluginInstance = defaultLayoutPluginInstance.toolbarPluginInstance.searchPluginInstance;
-    const searchRef = useRef(null);
+    const [matches, setMatches] = useState([]);
 
     useEffect(() => {
-        searchRef.current = searchPluginInstance;
-    }, []);
-
-    useEffect(() => {
-        if (!highlightRequest || !highlightRequest.text) return;
-
-        // PDF text-layer extraction (pdf.js) often differs from Docling's
-        // markdown export — ligatures, smart quotes, hyphenation, and
-        // whitespace can break exact matches on long strings. So we slice
-        // the chunk into many short overlapping phrases and highlight all of
-        // them at once; each phrase that survives extraction contributes to
-        // a contiguous highlight covering the full chunk.
-        const normalized = highlightRequest.text.replace(/\s+/g, ' ').trim();
-        const words = normalized.split(' ').filter(w => w.length > 0);
-
-        const windows = (size) => {
-            const out = [];
-            for (let i = 0; i <= words.length - size; i++) {
-                out.push(words.slice(i, i + size).join(' '));
-            }
-            return out;
-        };
-
-        const fiveWord = windows(5);
-        const threeWord = windows(3);
-        const rareWords = words
-            .map(w => w.replace(/[^\w]/g, ''))
-            .filter(w => w.length > 6 && /^[A-Za-z]+$/.test(w));
+        setMatches([]);
+        if (!highlightRequest?.topic || !highlightRequest?.doc || !highlightRequest?.text) return;
 
         let cancelled = false;
-        const runHighlight = async (keywords) => {
-            if (!keywords.length) return 0;
-            searchRef.current.clearHighlights();
-            const matches = await searchRef.current.highlight(
-                keywords.map(keyword => ({ keyword, matchCase: false, wholeWords: false }))
-            );
-            return Array.isArray(matches) ? matches.length : (matches ? 1 : 0);
-        };
-
-        const tryHighlight = async (attempt = 0) => {
-            if (cancelled || !searchRef.current) {
-                if (!searchRef.current && attempt < 10) {
-                    setTimeout(() => tryHighlight(attempt + 1), 400);
-                }
-                return;
-            }
+        (async () => {
             try {
-                for (const tier of [fiveWord, threeWord, rareWords]) {
-                    const count = await runHighlight(tier);
-                    if (cancelled) return;
-                    if (count > 0) {
-                        console.log('[PDF-HL] tier matched, highlights:', count);
-                        searchRef.current.jumpToMatch(0);
-                        return;
+                const res = await fetch(`${API_BASE}/api/${encodeURIComponent(highlightRequest.topic)}/highlight`, {
+                    method: 'POST',
+                    credentials: 'include',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ doc: highlightRequest.doc, text: highlightRequest.text }),
+                });
+                if (!res.ok) throw new Error(`highlight ${res.status}`);
+                const data = await res.json();
+                if (cancelled) return;
+                const list = Array.isArray(data?.matches) ? data.matches : [];
+                setMatches(list);
+                if (list.length > 0) {
+                    const firstPage = list[0].page - 1;
+                    const nav = defaultLayoutPluginInstance.toolbarPluginInstance?.pageNavigationPluginInstance;
+                    if (nav?.jumpToPage) {
+                        setTimeout(() => nav.jumpToPage(firstPage), 200);
                     }
                 }
-                console.warn('[PDF-HL] no tier matched, attempt:', attempt);
-                if (attempt < 5) setTimeout(() => tryHighlight(attempt + 1), 700);
             } catch (err) {
-                console.error('[PDF-HL] highlight error:', err);
+                console.error('[PDF-HL] highlight fetch failed:', err);
             }
-        };
-        const timer = setTimeout(() => tryHighlight(0), 500);
-        return () => { cancelled = true; clearTimeout(timer); };
+        })();
+
+        return () => { cancelled = true; };
     }, [highlightRequest]);
+
+    const renderPage = (props) => {
+        const pageNumber = props.pageIndex + 1;
+        const pageMatches = matches.filter(m => m.page === pageNumber);
+        return (
+            <>
+                {props.canvasLayer.children}
+                {props.textLayer.children}
+                {props.annotationLayer.children}
+                {pageMatches.map((m, i) => {
+                    const [l, t, r, b] = m.bbox;
+                    return (
+                        <div
+                            key={i}
+                            className="pdf-doc-highlight"
+                            style={{
+                                position: 'absolute',
+                                left: `${l * 100}%`,
+                                top: `${t * 100}%`,
+                                width: `${(r - l) * 100}%`,
+                                height: `${(b - t) * 100}%`,
+                            }}
+                        />
+                    );
+                })}
+            </>
+        );
+    };
 
     if (!url) {
         return <div className="pdf-placeholder">Select a document to preview.</div>;
@@ -91,6 +84,7 @@ const SingleDocument = ({ url, highlightRequest }) => {
                         <Viewer
                             fileUrl={url}
                             plugins={[defaultLayoutPluginInstance]}
+                            renderPage={renderPage}
                         />
                     </div>
                 </Worker>

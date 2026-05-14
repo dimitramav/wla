@@ -71,9 +71,6 @@
     overflow: auto;
     padding-bottom: $spacing-sm;
 
-    --rpv-search__highlight-background-color: rgba(245, 158, 11, 0.15);
-    --rpv-search__highlight--current-background-color: rgba(245, 158, 11, 0.35);
-
     .pdf-scroll {
         flex: 1;
         overflow-y: auto;
@@ -83,4 +80,11 @@
 .pdf-placeholder {
     color: $text-secondary;
     font-size: 0.9rem;
+}
+
+.pdf-doc-highlight {
+    background-color: rgba(245, 158, 11, 0.35);
+    mix-blend-mode: multiply;
+    pointer-events: none;
+    border-radius: 2px;
 }

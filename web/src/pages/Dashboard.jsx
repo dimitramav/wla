@@ -50,7 +50,7 @@ const DashboardContent = () => {
         if (!docFilename || !searchText || !topic) return;
         const fullUrl = `/pdfs/${topic}/${docFilename}`;
         setSelectedUrl(fullUrl);
-        setHighlightRequest({ text: searchText, key: Date.now() });
+        setHighlightRequest({ topic, doc: docFilename, text: searchText, key: Date.now() });
     }, [topic]);
 
     const handleQuizReset = useCallback(() => {

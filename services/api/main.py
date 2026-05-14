@@ -1,6 +1,6 @@
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
-from .routes import health,ingest,docsets,summary,qg
+from .routes import health,ingest,docsets,summary,qg,highlight
 
 
 @asynccontextmanager
@@ -19,6 +19,7 @@ def create_app() -> FastAPI:
     app.include_router(docsets.router)
     app.include_router(summary.router)
     app.include_router(qg.router)
+    app.include_router(highlight.router)
 
     return app
 
