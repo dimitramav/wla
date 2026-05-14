@@ -26,7 +26,6 @@ const Quiz = ({ topic, docsetHash, userId, PASS_THRESHOLD, onShowProgress, onErr
 
     } = useQuiz(topic, docsetHash, userId);
     const [submitted, setSubmitted] = useState(false);
-    console.log(weakKeywords)
     useEffect(() => { if (error && onError) onError(); }, [error]);
     if (error) return (
         <EmptyState

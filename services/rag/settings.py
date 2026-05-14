@@ -10,9 +10,11 @@ load_dotenv(Path("../.env"))
 CONTENT_DIR   = Path(os.getenv("RAG_CONTENT_DIR", "../content"))
 CHROMA_DIR    = Path(os.getenv("RAG_CHROMA_DIR", "rag/chroma"))
 DOCSETS_META  = Path(os.getenv("RAG_DOCSETS_META", "rag/docsets.json"))
+DOCLING_CACHE_DIR = Path(os.getenv("RAG_DOCLING_CACHE", "rag/docling_cache"))
 EMB_MODEL_ID  = os.getenv("RAG_EMBEDDING_MODEL", "sentence-transformers/all-mpnet-base-v2")
 
 CHROMA_DIR.mkdir(parents=True, exist_ok=True)
+DOCLING_CACHE_DIR.mkdir(parents=True, exist_ok=True)
 DOCSETS_META.parent.mkdir(parents=True, exist_ok=True)
 if not DOCSETS_META.exists():
     DOCSETS_META.write_text("{}", encoding="utf-8")
@@ -46,9 +48,6 @@ def collect_documents(topic: str) -> List[Path]:
             if p.is_file() and "pdfs_original" not in p.parts:
                 files.append(p)
     return sorted(files, key=lambda p: p.name)
-
-# Backward-compatible alias
-collect_pdf_files = collect_documents
 
 def file_signature(p: Path) -> FileSig:
     st = p.stat()

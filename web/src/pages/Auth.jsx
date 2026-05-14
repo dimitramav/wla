@@ -21,7 +21,7 @@ const Auth = () => {
 
     const toggleAuthMode = () => {
         setAuthMode(isSignIn ? "signup" : "signin");
-        setError(false);
+        setError(null);
         setUsername("");
         setPassword("");
         setEmail("");
@@ -98,7 +98,7 @@ const Auth = () => {
                                 placeholder="******"
                                 value={password}
                                 onChange={(e) => {
-                                    setError(false);
+                                    setError(null);
                                     setPassword(e.target.value);
                                 }}
                             />

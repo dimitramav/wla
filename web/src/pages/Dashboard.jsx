@@ -35,6 +35,7 @@ const DashboardContent = () => {
         setHighlightRequest(null);
     };
 
+    // 800ms matches the drawer's CSS slide-out transition; unmounting earlier would clip the animation.
     const handleClose = useCallback(() => {
         if (isClosing || !activeDrawer) return;
         setIsClosing(true);
@@ -49,7 +50,7 @@ const DashboardContent = () => {
         if (!docFilename || !searchText || !topic) return;
         const fullUrl = `/pdfs/${topic}/${docFilename}`;
         setSelectedUrl(fullUrl);
-        setHighlightRequest({ text: searchText, key: Date.now() });
+        setHighlightRequest({ topic, doc: docFilename, text: searchText, key: Date.now() });
     }, [topic]);
 
     const handleQuizReset = useCallback(() => {

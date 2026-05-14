@@ -1,7 +1,6 @@
 import json
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Query
 from ..models.QG import QGRequest, QGResponse, Question, SourceSpan
-from fastapi import  Query
 
 from rag.qg import generate_qg
 
@@ -9,9 +8,6 @@ router = APIRouter()
 
 @router.post("/qg", response_model=QGResponse)
 def qg(req: QGRequest, topic: str = Query(...)):
-     
-
-    # For MVP we ignore weak_keywords and difficulty_profile here
     try:
         out = generate_qg(
             topic=topic,

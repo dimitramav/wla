@@ -1,13 +1,3 @@
-/**
- *
- * This file provides the authentication context for the application.
- *
- * Key Features:
- * - Defines the `AuthProvider` component to manage authentication state.
- * - Exposes the `useAuth` hook for accessing authentication context.
- * - Handles user login, signup, logout, and session persistence.
- */
-
 import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { login, signup, logout, me } from '../api/auth';
 

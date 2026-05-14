@@ -1,10 +1,8 @@
-
-import { useEffect } from "react";
 import { FaCheckCircle, FaTimesCircle } from "react-icons/fa";
 import { FiBookOpen } from "react-icons/fi";
 const PASS_THRESHOLD = import.meta.env.PASS_THRESHOLD;
 
-const QuizScore = ({ questions, answers, level, onNewQuiz, onShowProgress, keywords, onViewSource }) => {
+const QuizScore = ({ questions, answers, level, onNewQuiz, onShowProgress, onViewSource }) => {
     const results = questions.map(q => {
         const userAnswer = answers[q.id];
         const isCorrect = userAnswer && q.correct && userAnswer.charAt(0) === q.correct.charAt(0); return {
@@ -16,7 +14,6 @@ const QuizScore = ({ questions, answers, level, onNewQuiz, onShowProgress, keywo
 
     const correctCount = results.filter(r => r.isCorrect).length;
     const passed = correctCount >= PASS_THRESHOLD;
-    console.log("PASS_THRESHOLD", PASS_THRESHOLD, typeof PASS_THRESHOLD);
     return (
         <div className="quiz-score">
             <div className="quiz-results">
