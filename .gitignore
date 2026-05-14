@@ -81,3 +81,5 @@ coverage/
 GEMINI.md
 CLAUDE.md
 /tmp/*
+./implementation
+./vscode
