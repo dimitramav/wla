@@ -58,7 +58,6 @@ def summarize_topic(topic: str, docset_hash: str, seed: int = 7) -> Dict:
 
     # Format the user prompt for the LLM
     user = USER_TEMPLATE.format(topic=topic, docset_hash=docset_hash) + "\n\n" + ctx
-    print(user)
 
     # Generate summary bullet points using the LLM
     bullets = generate_bullets(SYSTEM_SUMMARY, user, seed=seed, temperature=0.0)

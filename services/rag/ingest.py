@@ -14,7 +14,7 @@
  * - Metadata management utilities.
 """
 
-import hashlib, re, time
+import hashlib, logging, re, time
 from typing import Dict, Any, List
 from fastapi import HTTPException
 from .settings import (
@@ -23,6 +23,7 @@ from .settings import (
 from .pdf_filter import filter_document
 from .vecstore import make_splitter, collection_for
 
+logger = logging.getLogger(__name__)
 
 # Minimum characters of actual prose content for a chunk to be useful
 _MIN_PROSE_CHARS = 80
@@ -139,7 +140,7 @@ def ingest_topic(topic: str, force: bool = False, chunk_size: int = 800, chunk_o
                 "filter_notes": filt["notes"],
             })
         if skipped:
-            print(f"  [{p.name}] skipped {skipped} low-quality chunks")
+            logger.info("[%s] skipped %d low-quality chunks", p.name, skipped)
 
     if docs:
         # Embeddings are computed HERE by Chroma (via the embedding function)

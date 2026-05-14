@@ -7,6 +7,7 @@
 # - Generates questions using an LLM (Large Language Model).
 
 import json
+import logging
 import re
 from pathlib import Path
 from datetime import datetime, timezone
@@ -18,6 +19,8 @@ from dataclasses import dataclass
 from .settings import EMB_MODEL_ID
 from chromadb.utils import embedding_functions
 import numpy as np
+
+logger = logging.getLogger(__name__)
 
 # Module-level cache for chunk embeddings to avoid re-embedding on every request.
 # Keyed by (topic, docset_hash, emb_model) → np.ndarray of shape (n_chunks, dim).
@@ -46,11 +49,11 @@ def warmup_chunk_cache():
                 continue
             if _ordered_chunks.last_embeddings is not None:
                 _chunk_emb_cache[cache_key] = _ordered_chunks.last_embeddings
-                print(f"  [warmup] ✓ {topic} loaded from ChromaDB ({len(pool)} chunks, zero re-embedding)")
+                logger.info("[warmup] %s loaded from ChromaDB (%d chunks)", topic, len(pool))
             else:
-                print(f"  [warmup] ✗ {topic} — no embeddings in ChromaDB, will compute on first request")
+                logger.warning("[warmup] %s has no embeddings in ChromaDB; will compute on first request", topic)
         except Exception as e:
-            print(f"  [warmup] ✗ {topic} failed: {e}")
+            logger.warning("[warmup] %s failed: %s", topic, e)
 import heapq
 
 try:
@@ -588,7 +591,7 @@ def generate_qg(
     emb_model: str = None,
 ) -> Dict:
     """Generate questions for a topic"""
-    print(f"Generating QG for topic={topic} hash={docset_hash} with weak keywords={weak_keywords} and mix={mix}")
+    logger.info("Generating QG for topic=%s hash=%s with weak keywords=%s and mix=%s", topic, docset_hash, weak_keywords, mix)
     # Convert seed string to integer using hash
     seed_int = hash(seed)
 
@@ -598,20 +601,19 @@ def generate_qg(
     if not pool:
         return {"questions": [], "promptHash": ""}
 
-    # Use embeddings from ChromaDB (already computed during ingestion) — no re-embedding needed
     cache_key = (topic, docset_hash, emb_model or EMB_MODEL_ID)
     if cache_key in _chunk_emb_cache:
         chunk_vecs = _chunk_emb_cache[cache_key]
-        print(f"  Using cached chunk embeddings ({len(chunk_vecs)} chunks)")
+        logger.debug("Using cached chunk embeddings (%d chunks)", len(chunk_vecs))
     elif _ordered_chunks.last_embeddings is not None:
         chunk_vecs = _ordered_chunks.last_embeddings
         _chunk_emb_cache[cache_key] = chunk_vecs
-        print(f"  ✓ Loaded {len(chunk_vecs)} chunk embeddings from ChromaDB (zero re-embedding)")
+        logger.debug("Loaded %d chunk embeddings from ChromaDB", len(chunk_vecs))
     else:
-        print(f"  Computing {len(pool)} chunk embeddings (fallback)...")
+        # Fallback: re-embed if ChromaDB didn't return stored vectors
         chunk_vecs = np.array([_fn(txt)[0] for txt, _ in pool])
         _chunk_emb_cache[cache_key] = chunk_vecs
-        print(f"  ✓ Chunk embeddings cached")
+        logger.warning("Re-embedded %d chunks (ChromaDB vectors unavailable)", len(pool))
 
     mcq_n = int(mix.get("mcq", 10))
     yn_n = int(mix.get("yesno", 5))

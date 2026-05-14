@@ -47,9 +47,6 @@ def collect_documents(topic: str) -> List[Path]:
                 files.append(p)
     return sorted(files, key=lambda p: p.name)
 
-# Backward-compatible alias
-collect_pdf_files = collect_documents
-
 def file_signature(p: Path) -> FileSig:
     st = p.stat()
     return FileSig(name=str(p.name), size=st.st_size, mtime=st.st_mtime)

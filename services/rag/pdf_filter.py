@@ -141,7 +141,3 @@ def filter_document(path: Path) -> Dict[str, Any]:
             "skipped_pages": [],
             "preview": "",
         }
-
-
-# Backward-compatible alias
-filter_research_pdf = filter_document
