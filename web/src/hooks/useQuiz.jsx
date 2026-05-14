@@ -43,7 +43,7 @@ export const useQuiz = (topic, docsetHash, userId) => {
         }
     }, [docsetHash, userId, level]);
 
-    // load quiz when: level changes, docsetHash or userId changes, repeat level requested
+    // Same-level requests need an explicit reload because setLevel(newLevel) would be a no-op and the level-change effect wouldn't fire.
     const handleLevelChange = (newLevel) => {
         if (newLevel === level) {
             loadQuiz(newLevel);

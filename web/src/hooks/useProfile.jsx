@@ -16,7 +16,7 @@ export const useProfile = (topic, userId) => {
                 setUnlockedLevel(data.unlockedLevel || 1);
                 setPerLevel(Array.isArray(data.perLevel) ? data.perLevel : []);
             } catch (err) {
-                console.error("Error loading  profile:", err);
+                console.error("Error loading profile:", err);
                 setError(err.message || "Failed to load profile");
             } finally {
                 setLoading(false);

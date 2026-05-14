@@ -5,7 +5,7 @@ import '@react-pdf-viewer/core/lib/styles/index.css';
 import '@react-pdf-viewer/default-layout/lib/styles/index.css';
 
 
-const SingleDocument = ({ url, onSearchReady, highlightRequest }) => {
+const SingleDocument = ({ url, highlightRequest }) => {
     const defaultLayoutPluginInstance = defaultLayoutPlugin();
     const workerUrl = "https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.worker.min.js";
 
@@ -14,9 +14,6 @@ const SingleDocument = ({ url, onSearchReady, highlightRequest }) => {
 
     useEffect(() => {
         searchRef.current = searchPluginInstance;
-        if (onSearchReady) {
-            onSearchReady(searchPluginInstance);
-        }
     }, []);
 
     useEffect(() => {
