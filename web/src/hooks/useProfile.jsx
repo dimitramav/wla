@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { getProfile } from '../api/profile';
 export const useProfile = (topic, userId) => {
-    const [loading, setLoading] = useState(false);
+    const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [unlockedLevel, setUnlockedLevel] = useState(1);
     const [perLevel, setPerLevel] = useState([]);
