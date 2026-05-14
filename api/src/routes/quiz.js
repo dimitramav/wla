@@ -20,6 +20,7 @@ import { loadLevelKeywords } from "../lib/keywords.js";
 import { QuizDB } from "../db/QuizDB.js";
 import { ProgressDB } from "../db/ProgressDB.js";
 import { computeWeakKeywords } from "../lib/keywords.js";
+import { tryDemoQuiz } from "../lib/demoQuiz.js";
 const router = Router({ mergeParams: true });
 
 router.post("/:topic/quiz/start", async (req, res) => {
@@ -44,20 +45,30 @@ router.post("/:topic/quiz/start", async (req, res) => {
         }
         let weakKeywords = await computeWeakKeywords(uid, topic, lvl);
         const cfg = LEVELS[lvl];
+        const expectedCount = cfg.mix.mcq + cfg.mix.yesno;
+
+        const demoResponse = await tryDemoQuiz({ topic, level: lvl, docsetHash, uid, expectedCount, weakKeywords });
+        if (demoResponse) return res.json(demoResponse);
+
+        // When no weak keywords (new user, no history), send all questions
+        // through the strong (keyword-targeted) path to avoid untargeted chunks
+        const effectiveWeakRatio = weakKeywords.length > 0
+            ? (weakFocusRatio || 0.6)
+            : 0.0;
         // call FastAPI /qg
         const payload = {
             hash: docsetHash,
             keywords: baseKeywords,
             mix: cfg.mix,
-            seed: "default-seed",    // to be investigated 
+            seed: "default-seed",    // to be investigated
             difficulty_profile: cfg.difficulty_profile,
             weak_keywords: weakKeywords,
-            weak_focus_ratio: weakFocusRatio || 0.6,  // default to 60% weak keyword focus
+            weak_focus_ratio: effectiveWeakRatio,
         };
         const data = await qg(payload, topic);
         const qs = data?.questions || [];
         console.log("QG returned questions:", qs);
-        if (!Array.isArray(qs) || qs.length !== 10) {
+        if (!Array.isArray(qs) || qs.length !== expectedCount) {
             return res.status(502).json({ error: { message: "QG invalid response" } });
         }
         const quiz = await QuizDB.createStarted({

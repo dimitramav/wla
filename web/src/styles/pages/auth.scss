@@ -69,7 +69,8 @@
     max-width: 380px;
     gap: $spacing-md;
 
-    img {
+    .auth-mobile-logo {
+      display: none;
       width: 140px;
       align-self: center;
       margin-bottom: $spacing-sm;
@@ -109,5 +110,11 @@
 
   .auth-form-wrapper {
     flex: 1;
+
+    .auth-form {
+      .auth-mobile-logo {
+        display: block;
+      }
+    }
   }
 }

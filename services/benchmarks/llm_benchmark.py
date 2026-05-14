@@ -44,40 +44,13 @@ from benchmarks.config import GENERATOR_MODELS, LLM_CSV_FIELDS
 from benchmarks.io import RESULTS_DIR, find_latest_csv, load_csv
 from benchmarks.parsing import extract_json, validate_format
 from benchmarks.scoring import rubric
+from benchmarks.scoring.rubric import score_text_independence
 from benchmarks.scoring.composite import composite_score
 from benchmarks.scoring.judge import build_gemini_judge
 from llm.prompts import SYSTEM_QG as SYSTEM_PROMPT
+from llm.prompts import USER_QG_MC_TEMPLATE, DIFFICULTY_INSTRUCTIONS
 
 OLLAMA_URL = os.getenv("LLM_URL", "http://localhost:11434")
-
-# ---------------------------------------------------------------------------
-# Prompt template — system prompt is imported from production (llm.prompts).
-# The user template is intentionally a simplified version of
-# llm.prompts.USER_QG_MC_TEMPLATE: it strips the adaptive-difficulty knobs
-# (application_share, context_span, distractor_strength) so the benchmark
-# measures baseline generator quality at a fixed, neutral prompt without
-# the adaptive system as a confound.
-# ---------------------------------------------------------------------------
-USER_PROMPT_TEMPLATE = """Write exactly ONE multiple-choice question from this excerpt.
-
-EXCERPT:
-\"\"\"{excerpt}\"\"\"
-
-Rules:
-- The question and all answer options must be grammatically correct, well-formed English.
-- Base the question ONLY on the excerpt.
-- Options must be short and plausible; exactly 4 options labeled A) B) C) D).
-- Exactly ONE correct answer; respond with letter only in "correct".
-- "why" must be a complete sentence, max 140 characters, grounded in the excerpt.
-
-Return JSON:
-{{
-  "kind": "mcq",
-  "text": "...",
-  "options": ["A) ...","B) ...","C) ...","D) ..."],
-  "correct": "A"|"B"|"C"|"D",
-  "why": "..."
-}}"""
 
 # ---------------------------------------------------------------------------
 # Ollama model management (pull/rm for disk space)
@@ -115,12 +88,17 @@ def ollama_rm(tag: str):
 # LLM generation
 # ---------------------------------------------------------------------------
 
-def generate_question(model_tag: str, contexts: list[str]) -> tuple[str, float]:
+def generate_question(model_tag: str, contexts: list[str], difficulty_label: str = "beginner") -> tuple[str, float]:
     """Generate a quiz question from contexts. Returns (raw_output, latency_seconds)."""
     import requests
 
     excerpt = "\n\n---\n\n".join(contexts)
-    user_prompt = USER_PROMPT_TEMPLATE.format(excerpt=excerpt)
+    difficulty_instructions = DIFFICULTY_INSTRUCTIONS.get(difficulty_label, DIFFICULTY_INSTRUCTIONS["beginner"])
+    user_prompt = USER_QG_MC_TEMPLATE.format(
+        excerpt=excerpt,
+        difficulty_label=difficulty_label,
+        difficulty_instructions=difficulty_instructions,
+    )
 
     payload = {
         "model": model_tag,
@@ -133,7 +111,7 @@ def generate_question(model_tag: str, contexts: list[str]) -> tuple[str, float]:
     }
 
     start = time.time()
-    r = requests.post(f"{OLLAMA_URL}/v1/chat/completions", json=payload, timeout=180)
+    r = requests.post(f"{OLLAMA_URL}/v1/chat/completions", json=payload, timeout=600)
     latency = time.time() - start
 
     r.raise_for_status()
@@ -261,7 +239,7 @@ def evaluate_with_rubric(rows: list, judge_llm) -> list[dict]:
 # Main
 # ---------------------------------------------------------------------------
 
-def run_benchmarks(rag_csv_path: str | None = None):
+def run_benchmarks(rag_csv_path: str | None = None, resume_from: int = 1):
     csv_path = find_latest_csv("rag", rag_csv_path)
     rag_rows = load_csv(csv_path)
 
@@ -278,6 +256,8 @@ def run_benchmarks(rag_csv_path: str | None = None):
     print(f"RAG rows    : {n_questions} ({n_configs} configs × {n_questions // max(n_configs, 1)} questions)")
     print(f"Generators  : {n_models} models")
     print(f"Total evals : {n_questions * n_models}")
+    if resume_from > 1:
+        print(f"Resuming    : from model {resume_from}/{n_models}")
     print("=" * 60)
 
     # Build Gemini judge
@@ -293,6 +273,10 @@ def run_benchmarks(rag_csv_path: str | None = None):
     output_csv = RESULTS_DIR / f"llm_{ts}.csv"
 
     for model_idx, model in enumerate(GENERATOR_MODELS, 1):
+        if model_idx < resume_from:
+            print(f"\n  [{model_idx}/{n_models}] {model['name']} — SKIPPED (resume)")
+            continue
+
         model_name = model["name"]
         model_tag = model["tag"]
 
@@ -311,6 +295,7 @@ def run_benchmarks(rag_csv_path: str | None = None):
         for i, rag_row in enumerate(rag_rows):
             contexts_raw = rag_row.get("contexts_text", "")
             contexts = contexts_raw.split("|||") if contexts_raw else []
+            difficulty_label = rag_row.get("difficulty_label", "beginner")
 
             row = {
                 "timestamp": datetime.now(timezone.utc).isoformat(),
@@ -321,6 +306,7 @@ def run_benchmarks(rag_csv_path: str | None = None):
                 "retrieval_type": rag_row["retrieval_type"],
                 "question": rag_row["question"],
                 "ground_truth": rag_row.get("ground_truth", ""),
+                "difficulty_label": difficulty_label,
                 "contexts": contexts,  # kept for RAGAS, not written to CSV
                 "format_compliance": 0.0,
                 "response_time_s": None,
@@ -332,12 +318,13 @@ def run_benchmarks(rag_csv_path: str | None = None):
                 "distractor_plausibility": None,
                 "pedagogical_appropriateness": None,
                 "mcq_quality": None,
+                "text_independence": None,
                 "context_relevancy": rag_row.get("context_relevancy"),
                 "composite_score": None,
             }
 
             try:
-                raw, latency = generate_question(model_tag, contexts)
+                raw, latency = generate_question(model_tag, contexts, difficulty_label)
                 row["raw_output"] = raw
                 row["response_time_s"] = latency
 
@@ -367,6 +354,7 @@ def run_benchmarks(rag_csv_path: str | None = None):
                 row["response_time_s"] = None
                 row["format_compliance"] = 0.0
 
+            row["text_independence"] = score_text_independence(row["raw_output"])
             model_rows.append(row)
             status = "✓" if row["format_compliance"] == 1.0 else "✗"
             print(f"    {status} [{i+1}/{n_questions}] {row['response_time_s']}s  fmt={row['format_compliance']}")
@@ -391,8 +379,9 @@ def run_benchmarks(rag_csv_path: str | None = None):
         # Compute composite scores
         for r in model_rows:
             ctx_rel = float(r["context_relevancy"]) if r["context_relevancy"] is not None else None
+            ti = float(r["text_independence"]) if r["text_independence"] is not None else None
             r["composite_score"] = composite_score(
-                r["faithfulness"], ctx_rel, r["mcq_quality"], r["format_compliance"],
+                r["faithfulness"], ctx_rel, r["mcq_quality"], ti, r["format_compliance"],
             )
 
         all_results.extend(model_rows)
@@ -464,6 +453,8 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description="WLA LLM Generation Benchmark")
     parser.add_argument("--rag-csv", help="Path to specific RAG results CSV (default: latest)")
+    parser.add_argument("--resume", type=int, default=1,
+                        help="Model number to resume from (e.g. --resume 3 skips models 1-2)")
     args = parser.parse_args()
 
-    run_benchmarks(args.rag_csv)
+    run_benchmarks(args.rag_csv, resume_from=args.resume)

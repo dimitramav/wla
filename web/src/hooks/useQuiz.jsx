@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
 import { startQuiz } from '../api/quiz';
+import { useProfile } from './useProfile';
 
 export const useQuiz = (topic, docsetHash, userId) => {
-    const [level, setLevel] = useState(1);
+    const { unlockedLevel, loading: profileLoading } = useProfile(topic, userId);
+    const [level, setLevel] = useState(null);
     const [loading, setLoading] = useState(false);
     const [quizId, setQuizId] = useState(null);
     const [questions, setQuestions] = useState([]);
@@ -10,7 +12,10 @@ export const useQuiz = (topic, docsetHash, userId) => {
     const [error, setError] = useState(null);
     const [currentIndex, setCurrentIndex] = useState(0);
     const [weakKeywords, setWeakKeywords] = useState([]);
-    console.log(userId)
+
+    useEffect(() => {
+        if (level === null && !profileLoading) setLevel(unlockedLevel || 1);
+    }, [profileLoading, unlockedLevel, level]);
 
     const loadQuiz = async (targetLevel = level) => {
         setLoading(true);
@@ -22,7 +27,6 @@ export const useQuiz = (topic, docsetHash, userId) => {
         const weakFocusRatio = 0.65;
         try {
             const data = await startQuiz(topic, targetLevel, userId, docsetHash, weakFocusRatio);
-            console.log(data)
             setQuizId(data.quizId || null);
             setWeakKeywords(data.weak_keywords || []);
             setQuestions(Array.isArray(data.questions) ? data.questions : []);
@@ -34,8 +38,7 @@ export const useQuiz = (topic, docsetHash, userId) => {
         }
     };
     useEffect(() => {
-        console.log("useQuiz effect:", { docsetHash, userId, level, currentIndex });
-        if (docsetHash && userId) {
+        if (docsetHash && userId && level !== null) {
             loadQuiz(level);
         }
     }, [docsetHash, userId, level]);

@@ -7,6 +7,7 @@ This directory contains two independent benchmarks plus offline rescoring tools:
 | RAG retrieval | `benchmarks.rag_benchmark` | Compare embedding × chunk × retrieval-strategy configurations |
 | LLM generation | `benchmarks.llm_benchmark` | Compare local generator LLMs on a frozen RAG context set |
 | LLM RAGAS rescoring | `benchmarks.llm_ragas_score` | Re-score an existing LLM CSV with RAGAS (no regeneration) |
+| Expert review XLSX | `benchmarks.expert.generate` | Generate expert review spreadsheet via the RAG pipeline |
 | Answer-relevancy investigation | `benchmarks.investigations.rescore_answer_metric` | Audit rig for Finding 4 (payload-shape hypothesis) |
 | MCQ rubric investigation | `benchmarks.investigations.rescore_mcq_rubric` | Audit rig for Finding 5 (MCQ quality rubric) |
 
@@ -40,7 +41,7 @@ Per the project-wide rule (`CLAUDE.md` → Testing Protocol), always start servi
 
 ## 2. RAG Retrieval Benchmark
 
-**What it does.** Runs all 12 configurations (3 embeddings × 2 chunk sizes × 2 retrieval strategies) against the 10 golden questions. Scores each row with cosine similarity and RAGAS `context_precision`. Writes one CSV with 120 rows to `benchmarks/results/rag_<timestamp>.csv`.
+**What it does.** Runs all 12 configurations (3 embeddings × 2 chunk sizes × 2 retrieval strategies) against the 15 golden questions. Scores each row with cosine similarity and RAGAS `context_precision`. Writes one CSV with 180 rows to `benchmarks/results/rag_<timestamp>.csv`.
 
 ```bash
 cd services
@@ -55,7 +56,7 @@ No flags. The run takes **3–4 hours on CPU**, dominated by RAGAS judge calls. 
 
 ## 3. LLM Generation Benchmark
 
-**What it does.** For each of the four generator models, generates one MCQ per row from a frozen RAG CSV (120 rows), then scores every generation with format compliance + RAGAS faithfulness + MCQ quality rubric. Writes one CSV with 480 rows to `benchmarks/results/llm_<timestamp>.csv`.
+**What it does.** For each of the four generator models, generates one MCQ per row from a frozen RAG CSV (180 rows), then scores every generation with format compliance + RAGAS faithfulness + MCQ quality rubric. Writes one CSV with 720 rows to `benchmarks/results/llm_<timestamp>.csv`.
 
 **Must be run after a RAG benchmark** so that a `rag_*.csv` exists to freeze retrieval contexts against. By default, the latest `rag_*.csv` in `results/` is used.
 
@@ -65,10 +66,17 @@ cd services
 python -m benchmarks.llm_benchmark
 
 # Or pin a specific RAG run:
-python -m benchmarks.llm_benchmark --rag-csv rag_20260410_160216.csv
+python -m benchmarks.llm_benchmark --rag-csv rag_20260414_022925.csv
+
+# Resume from a specific model (e.g. skip models 1-2, start at model 3):
+python -m benchmarks.llm_benchmark --resume 3
 ```
 
-The run takes **~8 hours on CPU** (dominated by Ollama generation) plus ~10 minutes for the Gemini judge pass. Each model is `ollama pull`ed, benchmarked, then `ollama rm`ed sequentially to bound disk usage — so the run is resumable only per-model, not per-row.
+The run takes **~15–17 hours on CPU** with the 15-question golden set (180 RAG rows × 4 models × ~60–75s per question), plus ~10 minutes for the Gemini judge pass per model. Each model is `ollama pull`ed, benchmarked, then `ollama rm`ed sequentially to bound disk usage. Use `--resume N` to skip the first N-1 models if the run is interrupted. For long runs, use `nohup`:
+
+```bash
+cd services && nohup python -u -m benchmarks.llm_benchmark --rag-csv rag_20260414_022925.csv > /tmp/llm_benchmark.log 2>&1 &
+```
 
 **Output:** `services/benchmarks/results/llm_<YYYYMMDD_HHMMSS>.csv` (schema in [config.py::LLM_CSV_FIELDS](config.py)).
 
@@ -130,7 +138,25 @@ Both scripts accept `--limit N` for smoke testing on a handful of rows before co
 
 ---
 
-## 6. Output Layout
+## 6. Expert Review Spreadsheet
+
+**What it does.** Generates quiz questions via the production RAG pipeline (ChromaDB retrieval + Ollama generation) and exports them to a `.xlsx` spreadsheet for expert review. Questions are distributed evenly across difficulty levels and keywords.
+
+```bash
+cd services
+python -m benchmarks.expert.generate
+
+# Customise question count:
+python -m benchmarks.expert.generate --n-per-level 5 --n-sets 1
+```
+
+Requires **Ollama running** with `gemma2:9b-instruct-q4_0` (or the model specified in `LLM_MODEL`). Default output: 60 questions (2 sets × 3 levels × 5 keywords × 2 questions per keyword). Takes **~75 minutes on CPU**.
+
+**Output:** `services/benchmarks/results/expert_<topic>_<timestamp>.xlsx`
+
+---
+
+## 7. Output Layout
 
 ```
 services/benchmarks/
@@ -146,7 +172,15 @@ services/benchmarks/
 
 ---
 
-## 7. Reproducibility Notes
+## 8. Golden Questions
+
+The benchmark suite uses a set of 15 golden questions defined in [fixtures.py](fixtures.py). These cover all three difficulty levels (5 beginner, 5 intermediate, 5 advanced), span the full keyword taxonomy, and draw from all eight corpus sources. Each question uses exactly one retrieval keyword, matching the production retrieval pattern.
+
+The original 10-question set from Run 1 is preserved in [fixtures_v1.py](fixtures_v1.py) for reproducibility.
+
+---
+
+## 9. Reproducibility Notes
 
 - Generation: `temperature=0.0`, `seed=7` across all Ollama calls.
 - Judge: Gemini 2.5 Flash Lite, `temperature=0`, `max_workers=1`, batch size 5.

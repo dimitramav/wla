@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # start.sh — Start WLA services and wait until healthy.
 #
-# Usage: ./scripts/start.sh [PRESET]
+# Usage: ./scripts/start.sh [PRESET] [--demo]
 #
 # Presets (pick one):
 #   (none)            Everything: MongoDB + Express + FastAPI + Vite
@@ -11,6 +11,10 @@
 #   --frontend-only   Vite only
 #   --front-back      MongoDB + Express + Vite             (no FastAPI)
 #   --back-fastapi    MongoDB + Express + FastAPI          (no Vite)
+#
+# Flags (combinable with any preset):
+#   --demo            Serve cached quizzes from MongoDB instead of calling the LLM
+#                     (sets DEMO_MODE=true for Express; bypasses live generation)
 #
 # PID file: /tmp/wla.pids  (used by stop.sh)
 # Logs:
@@ -29,37 +33,46 @@ START_MONGO=true
 START_EXPRESS=true
 START_FASTAPI=true
 START_VITE=true
+DEMO_MODE_FLAG=false
 
-case "${1:-}" in
-  --backend-only)
-    START_FASTAPI=false
-    START_VITE=false
-    ;;
-  --fastapi-only)
-    START_MONGO=false
-    START_EXPRESS=false
-    START_VITE=false
-    ;;
-  --frontend-only)
-    START_MONGO=false
-    START_EXPRESS=false
-    START_FASTAPI=false
-    ;;
-  --front-back)
-    START_FASTAPI=false
-    ;;
-  --back-fastapi|--no-frontend)
-    START_VITE=false
-    ;;
-  "")
-    # default: all services
-    ;;
-  *)
-    echo "Unknown option: $1" >&2
-    echo "Valid presets: --backend-only | --fastapi-only | --frontend-only | --front-back | --back-fastapi | --no-frontend" >&2
-    exit 1
-    ;;
-esac
+for arg in "$@"; do
+  case "$arg" in
+    --backend-only)
+      START_FASTAPI=false
+      START_VITE=false
+      ;;
+    --fastapi-only)
+      START_MONGO=false
+      START_EXPRESS=false
+      START_VITE=false
+      ;;
+    --frontend-only)
+      START_MONGO=false
+      START_EXPRESS=false
+      START_FASTAPI=false
+      ;;
+    --front-back)
+      START_FASTAPI=false
+      ;;
+    --back-fastapi|--no-frontend)
+      START_VITE=false
+      ;;
+    --demo)
+      DEMO_MODE_FLAG=true
+      ;;
+    *)
+      echo "Unknown option: $arg" >&2
+      echo "Valid presets: --backend-only | --fastapi-only | --frontend-only | --front-back | --back-fastapi | --no-frontend" >&2
+      echo "Additional flags: --demo  (serve cached quizzes from MongoDB instead of calling the LLM)" >&2
+      exit 1
+      ;;
+  esac
+done
+
+if [[ "$DEMO_MODE_FLAG" == true ]]; then
+  export DEMO_MODE=true
+  echo "[wla] DEMO_MODE=true — Express will serve cached quizzes from MongoDB"
+fi
 
 # ── helpers ────────────────────────────────────────────────────────────────────
 
@@ -111,6 +124,31 @@ if [[ "$START_EXPRESS" == true ]]; then
   wait_for "Express" "http://localhost:3001/health" 30
 fi
 
+# ── 2b. Ollama + model check ──────────────────────────────────────────────────
+
+OLLAMA_MODEL="gemma2:9b-instruct-q4_0"
+
+if [[ "$START_FASTAPI" == true ]]; then
+  if ! command -v ollama &>/dev/null; then
+    die "ollama is not installed"
+  fi
+
+  if ! curl -sf --max-time 2 "http://localhost:11434/api/tags" >/dev/null 2>&1; then
+    log "Starting Ollama..."
+    ollama serve > /tmp/wla-ollama.log 2>&1 &
+    record_pid ollama $!
+    wait_for "Ollama" "http://localhost:11434/api/tags" 15
+  fi
+
+  if ! ollama list 2>/dev/null | grep -q "$OLLAMA_MODEL"; then
+    log "$OLLAMA_MODEL not found — pulling..."
+    ollama pull "$OLLAMA_MODEL" || die "Failed to pull $OLLAMA_MODEL"
+    log "$OLLAMA_MODEL pulled successfully"
+  else
+    log "Ollama model $OLLAMA_MODEL is available"
+  fi
+fi
+
 # ── 3. FastAPI RAG service (port 8000) ─────────────────────────────────────────
 
 if [[ "$START_FASTAPI" == true ]]; then
@@ -155,8 +193,9 @@ log ""
 log "Services UP:"
 [[ "$START_MONGO"   == true ]] && log "  MongoDB  → localhost:27017"
 [[ "$START_EXPRESS" == true ]] && log "  Express  → http://localhost:3001"
+[[ "$START_FASTAPI" == true ]] && log "  Ollama   → http://localhost:11434  ($OLLAMA_MODEL)"
 [[ "$START_FASTAPI" == true ]] && log "  FastAPI  → http://localhost:8000"
 [[ "$START_VITE"    == true ]] && log "  Vite     → http://localhost:5173"
 log ""
-log "Logs: /tmp/wla-express.log  /tmp/wla-fastapi.log  /tmp/wla-vite.log"
+log "Logs: /tmp/wla-express.log  /tmp/wla-fastapi.log  /tmp/wla-vite.log  /tmp/wla-ollama.log"
 log "Stop: ./scripts/stop.sh"

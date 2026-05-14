@@ -1,8 +1,18 @@
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from .routes import health,ingest,docsets,summary,qg
 
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Pre-warm chunk embedding cache on startup
+    from rag.qg import warmup_chunk_cache
+    warmup_chunk_cache()
+    yield
+
+
 def create_app() -> FastAPI:
-    app = FastAPI(title="WLA RAG", version="0.1.0")
+    app = FastAPI(title="WLA RAG", version="0.1.0", lifespan=lifespan)
 
     app.include_router(health.router)
     app.include_router(ingest.router)
@@ -10,5 +20,6 @@ def create_app() -> FastAPI:
     app.include_router(summary.router)
     app.include_router(qg.router)
 
-
     return app
+
+app = create_app()

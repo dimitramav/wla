@@ -24,9 +24,35 @@ import json
 import re
 import time
 
+# ---------------------------------------------------------------------------
+# Text-independence scoring (deterministic, regex-based)
+# ---------------------------------------------------------------------------
+# Binary metric: 1.0 if the question stands alone, 0.0 if it references the
+# source material. Pattern list derived from the v1 benchmark where 92% of
+# questions matched at least one of these phrases.
+
+_TEXT_REF_PATTERN = re.compile(
+    r"(?:according to|in this excerpt|based on the (?:text|passage|excerpt)"
+    r"|which (?:of the following )?is NOT (?:discussed|mentioned)"
+    r"|mentioned in (?:the|this)|the (?:passage|excerpt|text) (?:states|describes|discusses|suggests)"
+    r"|as (?:stated|described|discussed) in"
+    r"|NOT (?:a |an )?(?:factor|feature|benefit|concept|strategy) (?:discussed|mentioned)"
+    r"|refer(?:s|ring) to the)",
+    re.IGNORECASE,
+)
+
+
+def score_text_independence(raw_output: str) -> float:
+    """Return 1.0 if the MCQ is text-independent, 0.0 if it references the source."""
+    if not raw_output:
+        return 0.0
+    return 0.0 if _TEXT_REF_PATTERN.search(raw_output) else 1.0
+
 RUBRIC_PROMPT = """You are evaluating the quality of an automatically generated multiple-choice question (MCQ) for teacher training on student mental health.
 
-Source context (the excerpt the question was generated from):
+The question was generated from the source material below. A good question uses the source as factual grounding but stands alone as a professional development quiz item — it should help a teacher LEARN about student mental health, not test whether they read a specific document.
+
+Source material (used for factual grounding):
 {context}
 
 Generated MCQ:
@@ -39,16 +65,19 @@ Explanation: {why}
 Rate the MCQ on three dimensions, each from 1 (poor) to 5 (excellent):
 
 1. stem_clarity: Is the question stem well-formed, unambiguous, and self-contained?
-   5 = clear, focused, a reader can understand exactly what is being asked.
-   1 = ambiguous, fragmented, grammatically broken, or requires reading the options to understand.
+   5 = clear, focused, a teacher can understand exactly what is being asked without any additional context.
+   3 = understandable but somewhat vague, wordy, or requires careful reading of the options to interpret.
+   1 = ambiguous, fragmented, grammatically broken, or incomprehensible without additional context.
 
-2. distractor_plausibility: Are the 3 incorrect options plausible-but-wrong - topically relevant, not trivially identifiable as wrong, and meaningfully distinct from the correct answer?
-   5 = all 3 distractors are genuine competitors that a learner could reasonably consider.
+2. distractor_plausibility: Are the 3 incorrect options plausible-but-wrong — topically relevant, not trivially identifiable as wrong, and meaningfully distinct from the correct answer?
+   5 = all 3 distractors represent genuine misconceptions or near-miss answers that a teacher with partial knowledge could reasonably consider.
+   3 = distractors are on-topic but clearly weaker than the correct answer, or one distractor is obviously wrong.
    1 = distractors are absurd, off-topic, near-duplicates of the correct answer, or obviously nonsensical.
 
-3. pedagogical_appropriateness: Does the question probe meaningful understanding of the context rather than superficial recall of a specific phrase?
-   5 = tests conceptual understanding or application.
-   1 = trivial fact lookup, tests phrasing rather than content, or is off-topic relative to the excerpt.
+3. pedagogical_appropriateness: Does the question help a teacher learn or retain a meaningful concept about student mental health (risk factors, protective factors, interventions, classroom strategies)?
+   5 = tests conceptual understanding, application to classroom scenarios, or meaningful relationships between concepts. A teacher who answers correctly has genuinely learned something useful.
+   3 = tests a real concept but at a superficial level, or the concept has limited practical value for a teacher.
+   1 = tests document-level details (e.g. "according to the passage", "which is NOT mentioned", author names, section headings, methodology), asks about trivial facts, or references the source material in the question stem.
 
 Return strict JSON only, with no prose and no markdown fences:
 {{"stem_clarity": <1-5>, "distractor_plausibility": <1-5>, "pedagogical_appropriateness": <1-5>}}

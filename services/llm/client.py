@@ -37,7 +37,7 @@ def generate_bullets(system: str, user: str, seed: int = 7, temperature: float =
         ],
         "stream": False,
     }
-    r = requests.post(f"{LLM_URL}/v1/chat/completions", json=payload, timeout=120)
+    r = requests.post(f"{LLM_URL}/v1/chat/completions", json=payload, timeout=600)
     r.raise_for_status()
     text = r.json()["choices"][0]["message"]["content"]
     # normalize to bullets
@@ -83,7 +83,7 @@ def generate_json(system: str, user: str, seed: int = 7, temperature: float = 0.
         ],
         "stream": False,
     }
-    r = requests.post(f"{LLM_URL}/v1/chat/completions", json=payload, timeout=120)
+    r = requests.post(f"{LLM_URL}/v1/chat/completions", json=payload, timeout=600)
     r.raise_for_status()
     text = r.json()["choices"][0]["message"]["content"]
     parsed = _extract_first_json(text)

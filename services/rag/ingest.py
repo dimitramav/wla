@@ -14,7 +14,7 @@
  * - Metadata management utilities.
 """
 
-import hashlib, time
+import hashlib, re, time
 from typing import Dict, Any, List
 from fastapi import HTTPException
 from .settings import (
@@ -22,6 +22,51 @@ from .settings import (
 )
 from .pdf_filter import filter_document
 from .vecstore import make_splitter, collection_for
+
+
+# Minimum characters of actual prose content for a chunk to be useful
+_MIN_PROSE_CHARS = 80
+
+def _is_quality_chunk(text: str) -> bool:
+    """Return True if a chunk has enough substantive prose for question generation."""
+    # Strip markdown formatting to measure actual content
+    clean = re.sub(r'<!--.*?-->', '', text)
+    clean = re.sub(r'!\[[^\]]*\]\([^)]*\)', '', clean)
+    clean = re.sub(r'\[([^\]]*)\]\([^)]*\)', r'\1', clean)  # keep link text
+    clean = re.sub(r'#+\s*', '', clean)
+    clean = re.sub(r'\s+', ' ', clean).strip()
+
+    if len(clean) < _MIN_PROSE_CHARS:
+        return False
+
+    # Reject chunks that are mostly table markup (pipes dominate)
+    pipe_count = text.count('|')
+    if pipe_count > 10 and pipe_count > len(text) / 40:
+        return False
+
+    # Reject chunks that are mostly statistical notation (p-values, medians, etc.)
+    stat_chars = len(re.findall(r'[<>=±]\s*\d|p\s*[<>=]|\d+\.\d{2,}', clean))
+    if stat_chars > 5 and stat_chars > len(clean) / 30:
+        return False
+
+    # Reject chunks dominated by copyright/licensing boilerplate
+    lower = clean.lower()
+    if any(term in lower for term in (
+        "creative commons", "licensee mdpi", "open access article",
+        "distributed under the terms and conditions",
+    )):
+        return False
+
+    # Reject chunks that are mostly author affiliations / metadata
+    affil_lines = len(re.findall(
+        r'(?:Department of|Faculty of|School of|Institute of|University of|'
+        r'Correspondence:|E-mail:|ORCID:)',
+        text, flags=re.IGNORECASE,
+    ))
+    if affil_lines >= 3:
+        return False
+
+    return True
 
 # Ingest a topic into the vector store
 """
@@ -78,7 +123,11 @@ def ingest_topic(topic: str, force: bool = False, chunk_size: int = 800, chunk_o
             continue
 
         chunks = splitter.split_text(text)
+        skipped = 0
         for i, ch in enumerate(chunks):
+            if not _is_quality_chunk(ch):
+                skipped += 1
+                continue
             uid = hashlib.md5(f"{p.name}:{i}:{h}".encode("utf-8")).hexdigest()
             ids.append(f"{p.name}-{i}-{uid}")
             docs.append(ch)
@@ -89,6 +138,8 @@ def ingest_topic(topic: str, force: bool = False, chunk_size: int = 800, chunk_o
                 "docset_hash": h,
                 "filter_notes": filt["notes"],
             })
+        if skipped:
+            print(f"  [{p.name}] skipped {skipped} low-quality chunks")
 
     if docs:
         # Embeddings are computed HERE by Chroma (via the embedding function)

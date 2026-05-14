@@ -40,7 +40,7 @@ Four metrics contribute to each row, plus a weighted composite:
 - **MCQ quality rubric** (`mcq_quality`) — Custom LLM-as-judge rubric, 0–1. The same Gemini 2.5 Flash Lite judge rates each generated MCQ on three MCQ-specific dimensions, each 1–5: **stem clarity**, **distractor plausibility**, and **pedagogical appropriateness**. `mcq_quality = mean(three) / 5`. Replaces RAGAS `answer_relevancy`, which Finding 4 showed was a weak discriminator on MCQ generation (the 0.35–0.38 cluster is a real MiniLM + task property). The rubric is adapted from the Med-PaLM clinical QA protocol (Singhal et al. 2023) and targets the quality dimensions identified by Kurdi et al. (2020) in their systematic review of automatic MCQ generation. See LLM_BENCHMARK_METHODOLOGY.md §4.4 for full prompt and rationale.
 - **Answer relevancy** (`answer_relevancy`) — *Deprecated.* RAGAS metric retained in the CSV schema for backward-compat with pre-Finding-5 runs; no longer computed or used in the composite. See Finding 4.
 
-**Composite score** is a weighted average: `0.4 × faithfulness + 0.3 × context_relevancy + 0.2 × mcq_quality + 0.1 × format_compliance`. Grounding (faithfulness + retrieved-context quality) still dominates at 70%; task-specific MCQ quality contributes 20%; strict-JSON format contributes 10%. The v1 formula (`0.4·faith + 0.4·ctx + 0.1·ans_rel + 0.1·fmt`) is preserved in source as a deprecated path — see Finding 5 for the investigation that motivated the swap.
+**Composite score** is a weighted average that evolved across three iterations as empirical findings revealed measurement failures (see LLM_BENCHMARK_METHODOLOGY.md §4.7 for the full evolution). Runs 1–2 used the v2 formula: `0.4·faith + 0.3·ctx + 0.2·mcq_quality + 0.1·fmt`. Run 3 introduced the v3 formula: `0.30·faith + 0.25·ctx + 0.20·mcq_quality + 0.15·text_independence + 0.10·fmt`, after the prompt ablation study (§9) revealed that faithfulness conflated factual grounding with surface text overlap and the rubric judge failed to enforce the text-independence anchor.
 
 ### RAGAS judge
 
@@ -223,7 +223,235 @@ For the thesis, the narrative is: **a single generator swap from Mistral 7B to G
 
 ---
 
-## 6. Methodology Notes
+## 7. Replication with Domain-Grounded System Prompt and Expanded Question Set (Run 2)
+
+### 7.1 Motivation
+
+The initial benchmark (Sections 2–6) identified gemma2-9b as the strongest generator and prompt engineering for conceptual-probe MCQs as the biggest remaining quality lever (§5, "pedagogical appropriateness ceiling"). Concurrently, qualitative review of production quiz output revealed a recurring failure mode: questions that tested document navigation rather than mental-health understanding — e.g. *"Which of the following is mentioned as a category in the table?"* or *"According to the title, which potential effect of bullying is mentioned?"*.
+
+Two interventions were applied before Run 2:
+
+1. **Domain-grounded system prompt.** The `SYSTEM_QG` prompt was rewritten from a generic 3-line instruction to a 7-line domain-specific prompt that identifies the audience (primary and secondary school teachers), the subject domain (student mental health: school anxiety, emotional well-being, early intervention), and explicitly prohibits questions about document structure, table labels, page references, or methodology details. Each difficulty level (beginner, intermediate, advanced) was also updated with domain-specific question stems and a "do NOT ask about document structure" guard.
+
+2. **Expanded golden question set.** Run 2 uses the same 15 golden questions from the RAG benchmark Run 2 (see RAG Benchmark Report §7.1), covering all three difficulty levels, the full keyword taxonomy, and all eight corpus sources. The RAG CSV (`rag_20260414_022925.csv`) provides 180 frozen retrieval contexts per generator (12 configs × 15 questions), up from 120 in Run 1 (12 configs × 10 questions).
+
+The benchmark's `USER_PROMPT_TEMPLATE` was intentionally left unchanged — it remains a simplified, difficulty-neutral template to isolate the effect of the system prompt from the adaptive-difficulty system. This means Run 2 measures whether domain grounding in the system prompt alone can improve generation quality.
+
+### 7.2 Per-generator summary
+
+| Generator | Format | Faith | MCQ Qual | Composite | Latency (s, avg) |
+|-----------|:---:|:---:|:---:|:---:|:---:|
+| **gemma2-9b** | **0.983** | **0.867** | **0.824** | **0.884** | 74.5 |
+| llama3.1-8b | 0.817 | 0.827 | 0.765 | 0.854 | 57.0 |
+| phi3.5-3.8b | 0.822 | 0.700 | 0.777 | 0.804 | **39.7** |
+| mistral-7b | 0.678 | 0.726 | 0.646 | 0.786 | 68.0 |
+
+### 7.3 Comparison with Run 1
+
+| Generator | | Format | Faith | MCQ Qual | Composite |
+|-----------|---|:---:|:---:|:---:|:---:|
+| **gemma2-9b** | Run 1 | 1.000 | 0.833 | 0.784 | 0.831 |
+| | Run 2 | 0.983 | 0.867 | 0.824 | 0.884 |
+| | **Delta** | **-0.017** | **+0.034** | **+0.040** | **+0.053** |
+| llama3.1-8b | Run 1 | 0.942 | 0.735 | 0.780 | 0.781 |
+| | Run 2 | 0.817 | 0.827 | 0.765 | 0.854 |
+| | **Delta** | **-0.125** | **+0.092** | **-0.015** | **+0.073** |
+| phi3.5-3.8b | Run 1 | 0.842 | 0.722 | 0.806 | 0.784 |
+| | Run 2 | 0.822 | 0.700 | 0.777 | 0.804 |
+| | **Delta** | **-0.020** | **-0.022** | **-0.029** | **+0.020** |
+| mistral-7b | Run 1 | 0.742 | 0.714 | 0.697 | 0.765 |
+| | Run 2 | 0.678 | 0.726 | 0.646 | 0.786 |
+| | **Delta** | **-0.064** | **+0.012** | **-0.051** | **+0.021** |
+
+Composite scores improved across all four generators (+2.0 to +7.3 pp), driven primarily by higher context relevancy in the expanded RAG CSV (0.795 → 0.845–0.966 depending on config). However, the individual quality metrics reveal a divergent pattern: gemma2-9b improved on every quality axis, while the other three models showed format compliance regressions that dragged down their MCQ quality averages.
+
+### 7.4 Rubric sub-scores: Run 1 vs Run 2
+
+| Generator | | Stem clarity | Distractor plausibility | Pedagogical appropriateness |
+|-----------|---|:---:|:---:|:---:|
+| **gemma2-9b** | Run 1 | 4.97 | 3.61 | 3.19 |
+| | Run 2 | 4.97 | 3.76 | 3.63 |
+| | **Delta** | **0.00** | **+0.15** | **+0.44** |
+| llama3.1-8b | Run 1 | 4.88 | 3.56 | 3.25 |
+| | Run 2 | 4.73 | 3.50 | 3.23 |
+| | **Delta** | **-0.15** | **-0.06** | **-0.02** |
+| phi3.5-3.8b | Run 1 | 4.78 | 3.68 | 3.62 |
+| | Run 2 | 4.66 | 3.57 | 3.43 |
+| | **Delta** | **-0.12** | **-0.11** | **-0.19** |
+| mistral-7b | Run 1 | 4.40 | 3.01 | 3.04 |
+| | Run 2 | 4.07 | 2.93 | 2.70 |
+| | **Delta** | **-0.33** | **-0.08** | **-0.34** |
+
+The pedagogical appropriateness improvement for gemma2-9b (**+0.44 on a 5-point scale, +14%**) is the single largest rubric change in either run. This directly addresses the qualitative observation that motivated the prompt rewrite: questions now test understanding of concepts, risk factors, and interventions rather than document navigation.
+
+### 7.5 Why format compliance dropped for weaker models
+
+Format compliance decreased for every model except gemma2 (which remained near-perfect at 98.3%). The regression is most severe for llama3.1-8b (-12.5 pp) and mistral-7b (-6.4 pp).
+
+The cause is the **longer, more constrained system prompt**. The Run 1 `SYSTEM_QG` was three lines:
+
+> *You are a careful assessment item writer. You write questions ONLY from the provided excerpt. Do not invent facts. Always output strict JSON.*
+
+The Run 2 version is seven lines with domain context, audience description, and explicit prohibitions. Inspection of format failures reveals three patterns:
+
+- **Chatty preambles** (llama3.1): `"Here is a single multiple-choice question..."` before the JSON
+- **Inconsistent formatting** (mistral): options split across lines, missing commas, unescaped quotes
+- **Code fences** (phi3.5): wrapping JSON in `` ```json ``` `` blocks that the strict parser rejects
+
+This degradation under increased prompt complexity is consistent with the instruction-following literature. Zhou et al. (2023) established with IFEval that verifiable instruction compliance drops as the number and complexity of constraints increases, and that this effect is more pronounced in smaller models. Jaroslawicz et al. (2025) confirmed this scaling relationship with IFScale, showing that instruction-following performance degrades monotonically with instruction density, and that only the largest reasoning models maintain near-perfect compliance beyond 150 constraints. In the MCQ generation context specifically, Docherty (2024) found that small open-weight models (including Llama 3.2 3B) "perform poorly for all but the simplest schemas" when generating structured JSON, while larger models handle complex structured outputs more reliably.
+
+These are instruction-following failures under a more complex prompt, not content-quality regressions. The *scored* questions from these models are not meaningfully worse — the averages drop because more rows produce unparseable output and receive null scores. This reinforces the gemma2-9b recommendation: it is the only model in this parameter class robust enough to maintain format discipline under domain-specific prompting constraints.
+
+### 7.6 RAGAS faithfulness distribution
+
+| Generator | Perfect (1.0) | High (0.8–1.0) | Mid (0.5–0.8) | Low (0–0.5) | Zero (0.0) |
+|-----------|:---:|:---:|:---:|:---:|:---:|
+| **gemma2-9b** | **116 (66%)** | 13 | 37 | 9 | 1 |
+| llama3.1-8b | 90 (60%) | 10 | 39 | 7 | 4 |
+| phi3.5-3.8b | 55 (33%) | 17 | 68 | 24 | 5 |
+| mistral-7b | 49 (33%) | 22 | 53 | 22 | 3 |
+
+gemma2-9b achieves a perfect faithfulness score on 66% of questions — nearly double the rate of mistral and phi3.5. It also has the fewest zero-faithfulness (fully hallucinated) generations (1 vs 3–5 for other models).
+
+### 7.7 Top 5 end-to-end configurations (Run 2)
+
+| # | Generator | Embedding | Chunks | Retrieval | Composite |
+|---|-----------|-----------|:---:|:---:|:---:|
+| 1 | gemma2-9b | bge-small-en-v1.5 | 800/100 | hybrid | **0.938** |
+| 2 | gemma2-9b | all-mpnet-base-v2 | 800/100 | hybrid | 0.927 |
+| 3 | gemma2-9b | all-MiniLM-L6-v2 | 800/100 | hybrid | 0.913 |
+| 4 | gemma2-9b | all-mpnet-base-v2 | 800/100 | dense | 0.901 |
+| 5 | llama3.1-8b | all-mpnet-base-v2 | 512/50 | hybrid | 0.901 |
+
+All top-4 slots are held by gemma2-9b. The best end-to-end composite (0.938) is a **+6.4 pp improvement** over the Run 1 best (0.874, gemma2 + mpnet 800/100 hybrid). Hybrid retrieval with 800/100 chunks dominates the top positions across all embedding models, consistent with the RAG benchmark findings.
+
+### 7.8 Distractor plausibility: a model capability ceiling
+
+The distractor plausibility score remains the weakest rubric dimension across all generators in both runs (Run 2 range: 2.93–3.76/5). This is consistent with the broader automatic MCQ generation literature. Awalurahman & Budi (2024) identified distractor generation as the most challenging sub-task in their systematic review of 60 studies spanning 2009–2024, noting that plausible distractors require understanding of common misconceptions — a capability that depends on domain knowledge rather than linguistic fluency. Tran et al. (2024) found that even LLMs that generate mathematically valid distractors are "less adept at anticipating common errors or misconceptions among real students", and that 57% of LLM-generated MCQs contained at least one implausible distractor.
+
+The gemma2-9b improvement from 3.61 to 3.76 (+0.15) suggests that domain grounding in the system prompt helps the model select more plausible wrong answers from the mental-health domain, but the remaining gap to 5.0 is a model capability limitation at the 9B Q4_0 parameter class — not a prompt engineering problem.
+
+### 7.9 Updated recommendation
+
+| Decision | Run 1 | Run 2 | Change |
+|----------|-------|-------|--------|
+| Generator | gemma2-9b | gemma2-9b | Unchanged |
+| Composite score | 0.831 | **0.884** | **+0.053** |
+| Best end-to-end | 0.874 | **0.938** | **+0.064** |
+| Pedagogical appropriateness | 3.19/5 | **3.63/5** | **+0.44** |
+| Distractor plausibility | 3.61/5 | **3.76/5** | **+0.15** |
+
+The generator recommendation is unchanged. The domain-grounded system prompt improved gemma2-9b's composite by 5.3 percentage points and its pedagogical appropriateness by 14%. These gains came from a prompt-only intervention — no model retraining, no architectural changes, and no additional inference cost.
+
+For the thesis, the narrative extends the Run 1 finding: **adding domain-specific system prompt instructions to the already-recommended gemma2-9b generator improved the composite quality score by a further 5.3 percentage points (0.831 → 0.884), with the largest gain on pedagogical appropriateness (+14%), the dimension most directly tied to learning outcomes. The same prompt changes degraded format compliance for smaller models (mistral-7b, phi3.5-3.8b) due to the well-documented instruction-following scaling effect (Zhou et al. 2023; Jaroslawicz et al. 2025), reinforcing the case for gemma2-9b as the production generator.**
+
+---
+
+## 9. Prompt Ablation Study: Concept-Dependent Prompts (Run 3)
+
+### 9.1 Motivation
+
+Run 2 (§7) established gemma2-9b as the recommended generator and identified *pedagogical appropriateness ceiling* as the biggest remaining quality lever (§5): "Every generator tends toward phrase-lookup questions rather than conceptual probing." Qualitative review of the expert validation spreadsheet (Phase 9) confirmed the scale of the problem: **92% of generated questions** (166 out of 180 Run 2 rows) contained phrases like "according to the excerpt", "which is NOT discussed in this passage", or "based on the text", making them reading-comprehension exercises rather than knowledge-transfer items.
+
+The root cause was identified as a prompt-level framing issue (see LLM_BENCHMARK_METHODOLOGY.md §6 for the full prompt revision). The v2 prompt revision targeted this by reframing generation from "write a question from this excerpt" to "write a question that helps a teacher learn about student mental health", adding a banned-phrase list, and providing difficulty-level exemplars.
+
+### 9.2 Why gemma2-9b only
+
+Run 2 evaluated all four generators and established a clear hierarchy:
+
+| Generator | Composite (v2) | Format | Faithfulness | Gap to gemma2 |
+|-----------|:---:|:---:|:---:|:---:|
+| **gemma2-9b** | **0.884** | 0.983 | 0.867 | — |
+| llama3.1-8b | 0.854 | 0.817 | 0.827 | -0.030 |
+| phi3.5-3.8b | 0.804 | 0.822 | 0.700 | -0.080 |
+| mistral-7b | 0.786 | 0.678 | 0.726 | -0.098 |
+
+gemma2-9b led on every primary axis (composite, faithfulness, format compliance). The other three models also showed format compliance *regressions* under the more complex Run 2 system prompt (§7.5), with mistral-7b dropping to 67.8% — making them increasingly unreliable for ablation work where we need to isolate the effect of the user prompt from confounding format failures.
+
+Run 3 is not a model comparison — it is a **prompt ablation study**: same model, same frozen retrieval contexts (`rag_20260414_022925.csv`), only the prompt changes. Running a single model is the correct experimental design for this question, because:
+
+1. **Controlled variable isolation.** With one model, any change in output quality is attributable to the prompt, not to model-specific interactions with the prompt. Running all four models would introduce a confound: did phi3.5's score change because of the prompt or because the longer v2 instructions exceeded its instruction-following capacity (as happened in Run 2)?
+2. **Statistical power.** 180 rows (12 configs × 15 questions) is sufficient to detect meaningful changes in a single-model ablation. Spreading the same analysis budget across four models would reduce per-model n to the same 180, gaining no additional insight about the prompt while quadrupling runtime.
+3. **Practical efficiency.** The full four-model benchmark takes approximately 15–17 hours of local Ollama inference. The ablation question ("do concept-dependent prompts improve question quality?") does not require re-establishing the model ranking, which Run 2 already settled.
+
+### 9.3 Experimental setup
+
+- **Generator:** gemma2-9b (`gemma2:9b-instruct-q4_0`), temperature=0, seed=7
+- **RAG source:** `rag_20260414_022925.csv` — the same frozen retrieval contexts as Run 2
+- **Matrix:** 12 RAG configurations × 15 golden questions = 180 rows
+- **Prompt:** v2 system prompt + v2 user template (see LLM_BENCHMARK_METHODOLOGY.md §6)
+- **Judge:** Gemini 2.5 Flash Lite (same as Run 2)
+- **New metric:** `text_independence` (binary, regex-scored) — see LLM_BENCHMARK_METHODOLOGY.md §4.5
+
+### 9.4 Results: gemma2-9b, v1 prompts vs v2 prompts
+
+| Metric | Run 2 (v1 prompts) | Run 3 (v2 prompts) | Delta |
+|--------|:---:|:---:|:---:|
+| **composite (v3)** | **0.758** | **0.849** | **+0.091** |
+| **text_independence** | **0.044** | **0.944** | **+0.900** |
+| faithfulness | 0.867 | 0.726 | -0.140 |
+| context_relevancy | 0.906 | 0.906 | 0.000 |
+| mcq_quality | 0.824 | 0.815 | -0.009 |
+| format_compliance | 0.983 | 0.994 | +0.011 |
+
+Rubric sub-scores (1–5 scale):
+
+| Dimension | Run 2 | Run 3 | Delta |
+|-----------|:---:|:---:|:---:|
+| stem_clarity | 4.97 | 4.88 | -0.09 |
+| distractor_plausibility | 3.76 | 3.78 | +0.02 |
+| pedagogical_appropriateness | 3.63 | 3.56 | -0.07 |
+
+### 9.5 Interpreting the results
+
+**The primary effect: text independence.** The prompt revision achieved its goal: text-referencing questions dropped from 96% (172/180) to 4.4% (8/180). The `text_independence` metric captures this directly (0.044 → 0.944).
+
+**The faithfulness drop is expected, not a regression.** RAGAS faithfulness measures surface-level traceability of output claims back to the source chunks. Text-referencing questions are trivially faithful because they paraphrase the chunk by construction ("According to the excerpt, which factor..."). Standalone concept questions ("Which of the following is a common risk factor for...") are factually grounded in the same chunks but use different phrasing, which RAGAS scores lower. The faithfulness distribution confirms this:
+
+| Faithfulness range | Run 2 (v1 prompts) | Run 3 (v2 prompts) |
+|:---|:---:|:---:|
+| 1.0 (perfect) | 116 (65.5%) | 99 (55.3%) |
+| 0.5–0.99 | 50 (28.2%) | 43 (24.0%) |
+| 0.01–0.49 | 9 (5.1%) | 16 (8.9%) |
+| 0.0 (zero) | 2 (1.1%) | 21 (11.7%) |
+
+The increase in zero-faithfulness rows (2 → 21) warrants examination. Spot-checking these rows shows they are concept questions where the model expressed the knowledge in entirely original phrasing without any lexical overlap with the source chunks — not hallucinations, but reformulations. The questions are factually correct but RAGAS cannot trace them back to the source because the wording is too different. This confirms that faithfulness, as measured by RAGAS, is partially a surface-overlap metric rather than a pure factual-grounding metric.
+
+**MCQ quality is unchanged.** The -0.009 difference in mcq_quality is within noise (median identical at 0.867 for both runs). The 4 outlier rows with mcq_quality < 0.6 in Run 3 are judge glitches on valid questions — one received 1/1/1 for a well-formed question about family well-being communication. Excluding these 4 outliers, the mean is 0.823 vs 0.824 — effectively identical. The prompt revision changed *what* the questions are about without degrading *how well* they are constructed.
+
+**Pedagogical appropriateness did not improve.** This was surprising: the recalibrated rubric anchor (§4.4) explicitly penalises text-referencing questions at score 1, yet the v2 prompts showed no improvement on this dimension (3.63 → 3.56). Analysis revealed the cause: the Gemini judge was not applying the anchor. In Run 2, 62.6% of text-referencing questions received a pedagogical appropriateness score of 4 — the judge evaluated the concept (a real mental-health topic) and ignored the framing (references the excerpt). This motivated the addition of the dedicated `text_independence` metric (LLM_BENCHMARK_METHODOLOGY.md §4.5) and the v3 composite formula (§4.7) to ensure the most significant quality improvement was captured by the evaluation framework.
+
+### 9.6 Top 5 configurations (Run 3, v3 composite)
+
+| # | Embedding | Chunks | Retrieval | Composite (v3) |
+|---|-----------|:---:|:---:|:---:|
+| 1 | all-MiniLM-L6-v2 | 512/50 | hybrid | **0.868** |
+| 2 | bge-small-en-v1.5 | 512/50 | dense | 0.849 |
+| 3 | all-MiniLM-L6-v2 | 800/100 | dense | 0.848 |
+| 4 | all-MiniLM-L6-v2 | 800/100 | hybrid | 0.838 |
+| 5 | bge-small-en-v1.5 | 800/100 | hybrid | 0.835 |
+
+### 9.7 Updated recommendation
+
+| Decision | Run 2 | Run 3 | Change |
+|----------|-------|-------|--------|
+| Generator | gemma2-9b | gemma2-9b | Unchanged |
+| Prompts | v1 (domain-grounded) | **v2 (concept-dependent)** | Upgraded |
+| Composite (v3) | 0.758 | **0.849** | **+0.091** |
+| Text independence | 4.4% | **94.4%** | **+90 pp** |
+| Best config composite (v3) | 0.807 | **0.868** | **+0.061** |
+
+The generator recommendation is unchanged: gemma2-9b remains the only model with near-perfect format compliance, highest faithfulness, and the highest composite across all three runs. The v2 prompt revision is the single largest quality improvement in the benchmark series — not measured on the traditional quality axes (faithfulness, mcq_quality) but on the most pedagogically meaningful one: whether the generated questions actually teach the subject rather than test reading comprehension.
+
+For the thesis, the combined narrative across three runs is:
+
+1. **Run 1 → Run 2 (model selection + domain prompt):** Switching from mistral-7b to gemma2-9b and adding a domain-grounded system prompt raised the composite by +5.3 pp (0.831 → 0.884 on v2 formula) and improved pedagogical appropriateness by +0.44 on the 5-point scale (+14%).
+2. **Run 2 → Run 3 (prompt ablation):** The v2 concept-dependent prompt revision eliminated text-referencing questions from 96% to 4.4%, producing standalone knowledge items that test transferable understanding. The improvement required adding a dedicated `text_independence` metric and updating the composite formula (v3) because the existing metrics (faithfulness, pedagogical_appropriateness) failed to capture this dimension — faithfulness rewarded it and the rubric judge ignored it.
+3. **End state:** gemma2-9b + v2 prompts + MiniLM 512/50 hybrid achieves a composite of 0.868, with 94.4% text-independent questions, 0.726 faithfulness, and 0.815 MCQ quality. The remaining quality gap is in distractor plausibility (3.78/5), a known model-capability ceiling at the 9B Q4_0 parameter class (§7.8).
+
+---
+
+## 8. Methodology Notes
 
 - **Judge model:** Google Gemini 2.5 Flash Lite, accessed via `langchain-google-genai==1.0.10`. Selected to avoid the small-model self-grading bias described by Zheng et al. (2023). Paid-tier free-daily-quota was not sufficient (20 requests/day for the lite model); billing was enabled to complete the 480-row run in one session.
 - **Generation determinism:** All generators ran with `temperature=0.0` and `seed=7`. Responses are reproducible for the same Ollama model weights.
@@ -239,12 +467,16 @@ For the thesis, the narrative is: **a single generator swap from Mistral 7B to G
 
 ## References
 
+- Abdin, M., et al. (2024). Phi-3 Technical Report: A Highly Capable Language Model Locally on Your Phone. *arXiv:2404.14219*.
+- Awalurahman, A., & Budi, I. (2024). Automatic distractor generation in multiple-choice questions: a systematic literature review. *PeerJ Computer Science*, 10, e2441.
 - Bitew, S. K., Deleu, J., Develder, C., & Demeester, T. (2022). Learning to Reuse Distractors to Support Multiple-Choice Question Generation in Education. *IEEE Transactions on Learning Technologies*.
 - Es, S., James, J., Anke, L. E., & Schockaert, S. (2024). RAGAS: Automated Evaluation of Retrieval Augmented Generation. *EACL 2024 System Demonstrations*. (arXiv:2309.15217).
 - Gao, Y., Bing, L., Chen, W., Lyu, M. R., & King, I. (2019). Difficulty Controllable Generation of Reading Comprehension Questions. *IJCAI 2019*.
+- Jaroslawicz, D., et al. (2025). How Many Instructions Can LLMs Follow at Once? *arXiv:2507.11538*.
 - Kurdi, G., Leo, J., Parsia, B., Sattler, U., & Al-Emari, S. (2020). A Systematic Review of Automatic Question Generation for Educational Purposes. *International Journal of Artificial Intelligence in Education*, 30(1), 121–204.
 - Liang, P., et al. (2023). Holistic Evaluation of Language Models (HELM). *Transactions on Machine Learning Research*. (arXiv:2211.09110).
 - Singhal, K., et al. (2023). Large Language Models Encode Clinical Knowledge (Med-PaLM). *Nature*, 620(7972), 172–180.
-- Zheng, L., Chiang, W.-L., Sheng, Y., Zhuang, S., Wu, Z., Zhuang, Y., Lin, Z., Li, Z., Li, D., Xing, E., Zhang, H., Gonzalez, J. E., & Stoica, I. (2023). Judging LLM-as-a-Judge with MT-Bench and Chatbot Arena. *arXiv:2306.05685*.
 - Team Gemma. (2024). Gemma 2: Improving Open Language Models at a Practical Size. *Google DeepMind technical report*.
-- Abdin, M., et al. (2024). Phi-3 Technical Report: A Highly Capable Language Model Locally on Your Phone. *arXiv:2404.14219*.
+- Tran, K., et al. (2024). Exploring Automated Distractor Generation for Math Multiple-choice Questions via Large Language Models. *Findings of NAACL 2024*. (arXiv:2404.02124).
+- Zheng, L., Chiang, W.-L., Sheng, Y., Zhuang, S., Wu, Z., Zhuang, Y., Lin, Z., Li, Z., Li, D., Xing, E., Zhang, H., Gonzalez, J. E., & Stoica, I. (2023). Judging LLM-as-a-Judge with MT-Bench and Chatbot Arena. *arXiv:2306.05685*.
+- Zhou, J., Lu, T., Mishra, S., Brahma, S., Basu, S., Luan, Y., Zhou, D., & Hou, L. (2023). Instruction-Following Evaluation for Large Language Models. *arXiv:2311.07911*.

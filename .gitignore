@@ -53,6 +53,7 @@ docsets.json
 # --- Project-specific ---
 # Vector DB (persisted locally; don’t commit)
 rag/chroma/
+**/chroma_db/
 
 # Content PDFs (keep folder structure, skip large binaries)
 content/**/*.pdf
@@ -65,6 +66,7 @@ content/**/*.PDF
 
 # Benchmark results (generated output)
 services/benchmarks/results/*.csv
+services/benchmarks/results/excel/
 
 # Coverage / tooling
 coverage/
