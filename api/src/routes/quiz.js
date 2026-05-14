@@ -20,6 +20,7 @@ import { loadLevelKeywords } from "../lib/keywords.js";
 import { QuizDB } from "../db/QuizDB.js";
 import { ProgressDB } from "../db/ProgressDB.js";
 import { computeWeakKeywords } from "../lib/keywords.js";
+import { tryDemoQuiz } from "../lib/demoQuiz.js";
 const router = Router({ mergeParams: true });
 
 router.post("/:topic/quiz/start", async (req, res) => {
@@ -44,6 +45,11 @@ router.post("/:topic/quiz/start", async (req, res) => {
         }
         let weakKeywords = await computeWeakKeywords(uid, topic, lvl);
         const cfg = LEVELS[lvl];
+        const expectedCount = cfg.mix.mcq + cfg.mix.yesno;
+
+        const demoResponse = await tryDemoQuiz({ topic, level: lvl, docsetHash, uid, expectedCount, weakKeywords });
+        if (demoResponse) return res.json(demoResponse);
+
         // When no weak keywords (new user, no history), send all questions
         // through the strong (keyword-targeted) path to avoid untargeted chunks
         const effectiveWeakRatio = weakKeywords.length > 0
@@ -62,7 +68,6 @@ router.post("/:topic/quiz/start", async (req, res) => {
         const data = await qg(payload, topic);
         const qs = data?.questions || [];
         console.log("QG returned questions:", qs);
-        const expectedCount = cfg.mix.mcq + cfg.mix.yesno;
         if (!Array.isArray(qs) || qs.length !== expectedCount) {
             return res.status(502).json({ error: { message: "QG invalid response" } });
         }

@@ -36,7 +36,7 @@ const Quiz = ({ topic, docsetHash, userId, PASS_THRESHOLD, onShowProgress, onErr
             variant="error"
         />
     );
-    if (loading) return <Loader message="Preparing questions..." />;
+    if (loading || level === null) return <Loader message="Preparing questions..." />;
     if (questions.length === 0) return (
         <EmptyState
             icon={FiHelpCircle}

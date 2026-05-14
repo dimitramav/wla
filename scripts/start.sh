@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # start.sh — Start WLA services and wait until healthy.
 #
-# Usage: ./scripts/start.sh [PRESET]
+# Usage: ./scripts/start.sh [PRESET] [--demo]
 #
 # Presets (pick one):
 #   (none)            Everything: MongoDB + Express + FastAPI + Vite
@@ -11,6 +11,10 @@
 #   --frontend-only   Vite only
 #   --front-back      MongoDB + Express + Vite             (no FastAPI)
 #   --back-fastapi    MongoDB + Express + FastAPI          (no Vite)
+#
+# Flags (combinable with any preset):
+#   --demo            Serve cached quizzes from MongoDB instead of calling the LLM
+#                     (sets DEMO_MODE=true for Express; bypasses live generation)
 #
 # PID file: /tmp/wla.pids  (used by stop.sh)
 # Logs:
@@ -29,37 +33,46 @@ START_MONGO=true
 START_EXPRESS=true
 START_FASTAPI=true
 START_VITE=true
+DEMO_MODE_FLAG=false
 
-case "${1:-}" in
-  --backend-only)
-    START_FASTAPI=false
-    START_VITE=false
-    ;;
-  --fastapi-only)
-    START_MONGO=false
-    START_EXPRESS=false
-    START_VITE=false
-    ;;
-  --frontend-only)
-    START_MONGO=false
-    START_EXPRESS=false
-    START_FASTAPI=false
-    ;;
-  --front-back)
-    START_FASTAPI=false
-    ;;
-  --back-fastapi|--no-frontend)
-    START_VITE=false
-    ;;
-  "")
-    # default: all services
-    ;;
-  *)
-    echo "Unknown option: $1" >&2
-    echo "Valid presets: --backend-only | --fastapi-only | --frontend-only | --front-back | --back-fastapi | --no-frontend" >&2
-    exit 1
-    ;;
-esac
+for arg in "$@"; do
+  case "$arg" in
+    --backend-only)
+      START_FASTAPI=false
+      START_VITE=false
+      ;;
+    --fastapi-only)
+      START_MONGO=false
+      START_EXPRESS=false
+      START_VITE=false
+      ;;
+    --frontend-only)
+      START_MONGO=false
+      START_EXPRESS=false
+      START_FASTAPI=false
+      ;;
+    --front-back)
+      START_FASTAPI=false
+      ;;
+    --back-fastapi|--no-frontend)
+      START_VITE=false
+      ;;
+    --demo)
+      DEMO_MODE_FLAG=true
+      ;;
+    *)
+      echo "Unknown option: $arg" >&2
+      echo "Valid presets: --backend-only | --fastapi-only | --frontend-only | --front-back | --back-fastapi | --no-frontend" >&2
+      echo "Additional flags: --demo  (serve cached quizzes from MongoDB instead of calling the LLM)" >&2
+      exit 1
+      ;;
+  esac
+done
+
+if [[ "$DEMO_MODE_FLAG" == true ]]; then
+  export DEMO_MODE=true
+  echo "[wla] DEMO_MODE=true — Express will serve cached quizzes from MongoDB"
+fi
 
 # ── helpers ────────────────────────────────────────────────────────────────────
 
